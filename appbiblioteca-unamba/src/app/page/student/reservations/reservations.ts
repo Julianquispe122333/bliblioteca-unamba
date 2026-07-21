@@ -64,18 +64,27 @@ export class StudentReservations implements OnInit {
   }
 
   loadReservations(): void {
-    this.apiService.getReservations().subscribe({
+    const studentToFind = this.studentName || 'Estudiante UNAMBA';
+    this.apiService.getStudentReservations(studentToFind).subscribe({
       next: (res) => {
         if (res && res.data && res.data.length > 0) {
           this.reservations = res.data;
           this.syncLoans();
         } else {
-          this.loadReservationsLocal();
+          this.apiService.getReservations().subscribe({
+            next: (allRes) => {
+              if (allRes && allRes.data && allRes.data.length > 0) {
+                this.reservations = allRes.data;
+              } else {
+                this.loadReservationsLocal();
+              }
+              this.syncLoans();
+            },
+            error: () => this.loadReservationsLocal()
+          });
         }
       },
-      error: () => {
-        this.loadReservationsLocal();
-      }
+      error: () => this.loadReservationsLocal()
     });
   }
 

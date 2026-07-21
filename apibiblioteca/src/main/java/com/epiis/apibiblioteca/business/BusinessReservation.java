@@ -36,11 +36,7 @@ public class BusinessReservation {
     public ResponseDataGeneric<List<ResponseReservation>> getAll() {
         checkExpirations();
         List<EntityReservation> list = repositoryReservation.findAll();
-        List<ResponseReservation> resList = new ArrayList<>();
-        for (EntityReservation r : list) {
-            resList.add(convertToResponse(r));
-        }
-        return new ResponseDataGeneric<>(resList);
+        return new ResponseDataGeneric<>(groupReservations(list));
     }
 
     public ResponseDataGeneric<List<ResponseReservation>> getByStudent(String studentName) {
@@ -57,11 +53,7 @@ public class BusinessReservation {
             list = repositoryReservation.findAll();
         }
 
-        List<ResponseReservation> resList = new ArrayList<>();
-        for (EntityReservation r : list) {
-            resList.add(convertToResponse(r));
-        }
-        return new ResponseDataGeneric<>(resList);
+        return new ResponseDataGeneric<>(groupReservations(list));
     }
 
     public ResponseDataGeneric<ResponseReservation> create(RequestReservationCreate request) {
@@ -73,8 +65,13 @@ public class BusinessReservation {
             return response;
         }
 
-        // Buscar o crear estudiante
-        String email = request.getEmail() != null ? request.getEmail() : request.getStudentName().toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
+        // Buscar o crear estudiante con su nombre real
+        String rawName = request.getStudentName() != null && !request.getStudentName().trim().isEmpty() ? request.getStudentName().trim() : "Estudiante UNAMBA";
+        String[] nameParts = rawName.split(" ");
+        String fName = nameParts[0];
+        String sName = nameParts.length > 1 ? rawName.substring(fName.length()).trim() : "UNAMBA";
+
+        String email = request.getEmail() != null ? request.getEmail() : rawName.toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
         Optional<EntityUser> userOpt = repositoryUser.findByEmail(email);
         EntityUser user;
         if (userOpt.isPresent()) {
@@ -82,8 +79,8 @@ public class BusinessReservation {
         } else {
             user = new EntityUser();
             user.setUniversityCode(request.getUniversityCode() != null ? request.getUniversityCode() : "EST" + (100000 + new Random().nextInt(900000)));
-            user.setFirstName("Estudiante");
-            user.setSurName("UNAMBA");
+            user.setFirstName(fName);
+            user.setSurName(sName);
             user.setEmail(email);
             user.setRole("Estudiante");
             user.setCreatedAt(new Date());
@@ -135,12 +132,11 @@ public class BusinessReservation {
         }
 
         if (lastSavedRes != null) {
-            lastSavedRes = repositoryReservation.findById(lastSavedRes.getIdReservation()).orElse(lastSavedRes);
-            ResponseReservation dto = convertToResponse(lastSavedRes);
-            dto.setCode(randomCode);
-            dto.setBookTitle(String.join(", ", request.getBookTitles()));
-            dto.setBookTitles(request.getBookTitles());
-            response.setData(dto);
+            List<EntityReservation> savedList = repositoryReservation.findAllByCode(randomCode);
+            List<ResponseReservation> grouped = groupReservations(savedList.isEmpty() ? List.of(lastSavedRes) : savedList);
+            if (!grouped.isEmpty()) {
+                response.setData(grouped.get(0));
+            }
         }
 
         response.success();
@@ -151,9 +147,10 @@ public class BusinessReservation {
 
     public ResponseDataGeneric<ResponseReservation> getByCode(String code) {
         ResponseDataGeneric<ResponseReservation> response = new ResponseDataGeneric<>();
-        Optional<EntityReservation> opt = repositoryReservation.findByCode(code.trim().toUpperCase());
-        if (opt.isPresent()) {
-            response.setData(convertToResponse(opt.get()));
+        List<EntityReservation> list = repositoryReservation.findAllByCode(code.trim().toUpperCase());
+        if (!list.isEmpty()) {
+            List<ResponseReservation> grouped = groupReservations(list);
+            response.setData(grouped.get(0));
             response.success();
         } else {
             response.error();
@@ -180,31 +177,50 @@ public class BusinessReservation {
         }
     }
 
-    private ResponseReservation convertToResponse(EntityReservation r) {
-        ResponseReservation dto = new ResponseReservation();
-        dto.setIdReservation(r.getIdReservation());
-        dto.setCode(r.getCode());
-        
-        if (r.getUser() != null) {
-            dto.setStudentName(r.getUser().getFirstName() + " " + r.getUser().getSurName());
-            dto.setUniversityCode(r.getUser().getUniversityCode());
-            dto.setEmail(r.getUser().getEmail());
-        } else {
-            dto.setStudentName("Estudiante UNAMBA");
-            dto.setUniversityCode("EST675839");
-            dto.setEmail("estudiante@unamba.edu.pe");
+    private List<ResponseReservation> groupReservations(List<EntityReservation> list) {
+        java.util.Map<String, List<EntityReservation>> grouped = new java.util.LinkedHashMap<>();
+        for (EntityReservation r : list) {
+            grouped.computeIfAbsent(r.getCode(), k -> new ArrayList<>()).add(r);
         }
 
-        if (r.getBook() != null) {
-            dto.setBookTitle(r.getBook().getTitle());
+        List<ResponseReservation> resList = new ArrayList<>();
+        for (java.util.Map.Entry<String, List<EntityReservation>> entry : grouped.entrySet()) {
+            List<EntityReservation> group = entry.getValue();
+            EntityReservation first = group.get(0);
+
+            ResponseReservation dto = new ResponseReservation();
+            dto.setIdReservation(first.getIdReservation());
+            dto.setCode(first.getCode());
+
+            if (first.getUser() != null) {
+                dto.setStudentName(first.getUser().getFirstName() + " " + first.getUser().getSurName());
+                dto.setUniversityCode(first.getUser().getUniversityCode());
+                dto.setEmail(first.getUser().getEmail());
+            } else {
+                dto.setStudentName("Estudiante UNAMBA");
+                dto.setUniversityCode("EST675839");
+                dto.setEmail("estudiante@unamba.edu.pe");
+            }
+
             List<String> titles = new ArrayList<>();
-            titles.add(r.getBook().getTitle());
+            for (EntityReservation er : group) {
+                if (er.getBook() != null && er.getBook().getTitle() != null) {
+                    titles.add(er.getBook().getTitle());
+                }
+            }
+            if (titles.isEmpty()) {
+                titles.add("Libro Reservado");
+            }
+
             dto.setBookTitles(titles);
+            dto.setBookTitle(String.join(", ", titles));
+            dto.setStatus(first.getStatus());
+            dto.setExpirationDate(first.getExpirationDate() != null ? first.getExpirationDate().toString().split(" ")[0] : "");
+            dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString().split(" ")[0] : "");
+
+            resList.add(dto);
         }
 
-        dto.setStatus(r.getStatus());
-        dto.setExpirationDate(r.getExpirationDate() != null ? r.getExpirationDate().toString() : "");
-        dto.setCreatedAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
-        return dto;
+        return resList;
     }
 }
