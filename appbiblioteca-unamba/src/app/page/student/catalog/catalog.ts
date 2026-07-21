@@ -170,16 +170,16 @@ export class StudentCatalog implements OnInit {
 
   private loadBooksLocal(): void {
     const storedBooks = localStorage.getItem('books');
-    if (storedBooks) {
-      this.books = JSON.parse(storedBooks);
-    } else {
-      this.books = [
+    let list: Book[] = storedBooks ? JSON.parse(storedBooks) : [];
+    if (!list || list.length === 0) {
+      list = [
         { idBook: 1, idCategory: 1, idAuthor: 1, title: 'Introducción a la Programación con Python', authorName: 'John Smith', totalCopies: 5, availableCopies: 5, description: 'Guía introductoria para aprender Python paso a paso.', hasPdf: true, image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&q=80' },
         { idBook: 2, idCategory: 2, idAuthor: 2, title: 'Cálculo de una Variable', authorName: 'James Stewart', totalCopies: 3, availableCopies: 2, description: 'Libro de texto clásico de cálculo riguroso.', hasPdf: false, image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80' },
         { idBook: 3, idCategory: 3, idAuthor: 3, title: 'Física Universitaria', authorName: 'Sears & Zemansky', totalCopies: 2, availableCopies: 2, description: 'Referencia para estudiantes de ciencias para dominar la física.', hasPdf: true, image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80' },
         { idBook: 5, idCategory: 2, idAuthor: 5, title: 'Álgebra Lineal y sus Aplicaciones', authorName: 'Gilbert Strang', totalCopies: 1, availableCopies: 0, description: 'Conceptos fundamentales de matrices y espacios vectoriales.', hasPdf: false, image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80' }
       ];
     }
+    this.books = list;
     this.processBooks();
   }
 
