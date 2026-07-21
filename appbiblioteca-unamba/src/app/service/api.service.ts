@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environments';
 
 export interface ApiResponse<T> {
   type: string;
@@ -13,7 +14,7 @@ export interface ApiResponse<T> {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080';
+  private baseUrl = environment.urlBase;
 
   // Login
   login(email: string, code: string, role: string): Observable<any> {
