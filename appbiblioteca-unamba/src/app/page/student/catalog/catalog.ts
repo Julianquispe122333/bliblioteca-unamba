@@ -110,11 +110,13 @@ export class StudentCatalog implements OnInit {
   }
 
   loadBooks(): void {
+    this.loadCategoriesAndAuthors();
+
     this.apiService.getBooks().subscribe({
       next: (res) => {
         if (res && res.data && res.data.length > 0) {
           this.books = res.data;
-          localStorage.setItem('books', JSON.stringify(this.books));
+          this.processBooks();
         } else {
           this.loadBooksLocal();
         }
@@ -123,8 +125,7 @@ export class StudentCatalog implements OnInit {
     });
   }
 
-  private loadBooksLocal(): void {
-    // 1. Cargar Categorías
+  private loadCategoriesAndAuthors(): void {
     const storedCategories = localStorage.getItem('categories');
     if (storedCategories) {
       this.dbCategories = JSON.parse(storedCategories);
@@ -138,7 +139,6 @@ export class StudentCatalog implements OnInit {
       localStorage.setItem('categories', JSON.stringify(this.dbCategories));
     }
 
-    // Cargar Autores
     const storedAuthors = localStorage.getItem('authors');
     if (storedAuthors) {
       this.dbAuthors = JSON.parse(storedAuthors);
@@ -152,8 +152,23 @@ export class StudentCatalog implements OnInit {
       ];
       localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
     }
+  }
 
-    // 2. Cargar Libros
+  private processBooks(): void {
+    this.books.forEach(book => {
+      if (!book.categoryName && book.idCategory) {
+        const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
+        book.categoryName = cat ? cat.name : 'Sin Categoría';
+      }
+      if (!book.authorName && book.idAuthor) {
+        const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
+        book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
+      }
+    });
+    localStorage.setItem('books', JSON.stringify(this.books));
+  }
+
+  private loadBooksLocal(): void {
     const storedBooks = localStorage.getItem('books');
     if (storedBooks) {
       this.books = JSON.parse(storedBooks);
@@ -164,51 +179,16 @@ export class StudentCatalog implements OnInit {
         { idBook: 3, idCategory: 3, idAuthor: 3, title: 'Física Universitaria', authorName: 'Sears & Zemansky', totalCopies: 2, availableCopies: 2, description: 'Referencia para estudiantes de ciencias para dominar la física.', hasPdf: true, image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80' },
         { idBook: 5, idCategory: 2, idAuthor: 5, title: 'Álgebra Lineal y sus Aplicaciones', authorName: 'Gilbert Strang', totalCopies: 1, availableCopies: 0, description: 'Conceptos fundamentales de matrices y espacios vectoriales.', hasPdf: false, image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80' }
       ];
-      localStorage.setItem('books', JSON.stringify(this.books));
     }
-
-    // Asegurar que el libro 'Ingeniería de Software' sea eliminado si existía en localStorage
-    this.books = this.books.filter(book => !book.title.toLowerCase().includes('ingeniería de software') && !book.title.toLowerCase().includes('inginiereia de sofware'));
-
-    // Mapear nombres de categorías a los libros para mostrar en UI y migrar datos antiguos
-    this.books.forEach(book => {
-      // Migración Categoría
-      if (!book.idCategory && book.categoryName) {
-        const matchedCat = this.dbCategories.find(c => c.name === book.categoryName);
-        book.idCategory = matchedCat ? matchedCat.idCategory : this.dbCategories[0].idCategory;
-      } else if (!book.idCategory) {
-        book.idCategory = this.dbCategories[0].idCategory;
-      }
-      
-      // Migración Autor
-      if (!book.idAuthor && book.authorName) {
-        const matchedAuth = this.dbAuthors.find(a => book.authorName.includes(a.surName));
-        book.idAuthor = matchedAuth ? matchedAuth.idAuthor : this.dbAuthors[0].idAuthor;
-      } else if (!book.idAuthor) {
-        book.idAuthor = this.dbAuthors[0].idAuthor;
-      }
-
-      // Migración Stock
-      if (book.totalCopies === undefined || book.totalCopies === null || book.totalCopies === 0) {
-        book.totalCopies = 3;
-        book.availableCopies = 3;
-      }
-      
-      const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
-      book.categoryName = cat ? cat.name : 'Sin Categoría';
-
-      const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
-      book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
-    });
-    
-    // Guardar los libros migrados de vuelta al storage para que la corrección sea permanente
-    localStorage.setItem('books', JSON.stringify(this.books));
+    this.processBooks();
   }
 
   get filteredBooks(): Book[] {
+    const query = (this.searchQuery || '').toLowerCase().trim();
     return this.books.filter(book => {
-      const matchesSearch = book.title.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
-                            book.authorName.toLowerCase().includes(this.searchQuery.toLowerCase());
+      const title = (book.title || '').toLowerCase();
+      const author = (book.authorName || '').toLowerCase();
+      const matchesSearch = !query || title.includes(query) || author.includes(query);
       const matchesCategory = this.selectedCategoryId === 0 || book.idCategory === this.selectedCategoryId;
       return matchesSearch && matchesCategory;
     });

@@ -15,6 +15,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
 import { AdminAuthors } from '../authors/authors';
 import { AdminCategories } from '../categories/categories';
+import { ApiService } from '../../../service/api.service';
 
 interface Category {
   idCategory: number;
@@ -33,8 +34,8 @@ interface Book {
   idCategory: number;
   idAuthor: number;
   title: string;
-  authorName: string; // derived
-  categoryName: string; // derived
+  authorName?: string; // derived
+  categoryName?: string; // derived
   totalCopies: number;
   availableCopies: number;
   description: string;
@@ -74,6 +75,7 @@ export class BookCrud implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
+  private apiService = inject(ApiService);
 
   books: Book[] = [];
   dbCategories: Category[] = [];
@@ -101,9 +103,9 @@ export class BookCrud implements OnInit {
     const q = this.searchQuery.toLowerCase().trim();
     if (!q) return this.books;
     return this.books.filter(b =>
-      b.title.toLowerCase().includes(q) ||
-      b.authorName.toLowerCase().includes(q) ||
-      b.categoryName.toLowerCase().includes(q)
+      (b.title || '').toLowerCase().includes(q) ||
+      (b.authorName || '').toLowerCase().includes(q) ||
+      (b.categoryName || '').toLowerCase().includes(q)
     );
   }
 
@@ -165,7 +167,22 @@ export class BookCrud implements OnInit {
   }
 
   loadData(): void {
-    // Load Categories
+    this.loadCategoriesAndAuthorsLocal();
+
+    this.apiService.getBooks().subscribe({
+      next: (res) => {
+        if (res && res.data && res.data.length > 0) {
+          this.books = res.data;
+          this.processBooks();
+        } else {
+          this.loadBooksLocal();
+        }
+      },
+      error: () => this.loadBooksLocal()
+    });
+  }
+
+  private loadCategoriesAndAuthorsLocal(): void {
     const storedCategories = localStorage.getItem('categories');
     if (storedCategories) {
       this.dbCategories = JSON.parse(storedCategories);
@@ -179,7 +196,6 @@ export class BookCrud implements OnInit {
       localStorage.setItem('categories', JSON.stringify(this.dbCategories));
     }
 
-    // Load Authors
     const storedAuthors = localStorage.getItem('authors');
     if (storedAuthors) {
       this.dbAuthors = JSON.parse(storedAuthors);
@@ -193,53 +209,36 @@ export class BookCrud implements OnInit {
       ];
       localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
     }
-    
     this.dbAuthors.forEach(a => a.fullName = `${a.firstName} ${a.surName}`);
+  }
 
-    // Load Books
+  private processBooks(): void {
+    this.books.forEach(book => {
+      if (!book.categoryName && book.idCategory) {
+        const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
+        book.categoryName = cat ? cat.name : 'Sin Categoría';
+      }
+      if (!book.authorName && book.idAuthor) {
+        const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
+        book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
+      }
+    });
+    localStorage.setItem('books', JSON.stringify(this.books));
+  }
+
+  private loadBooksLocal(): void {
     const storedBooks = localStorage.getItem('books');
     if (storedBooks) {
       this.books = JSON.parse(storedBooks);
+    } else {
+      this.books = [
+        { idBook: 1, idCategory: 1, idAuthor: 1, title: 'Introducción a la Programación con Python', authorName: 'John Smith', totalCopies: 5, availableCopies: 5, description: 'Guía introductoria para aprender Python paso a paso.', hasPdf: true, image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&q=80' },
+        { idBook: 2, idCategory: 2, idAuthor: 2, title: 'Cálculo de una Variable', authorName: 'James Stewart', totalCopies: 3, availableCopies: 2, description: 'Libro de texto clásico de cálculo riguroso.', hasPdf: false, image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80' },
+        { idBook: 3, idCategory: 3, idAuthor: 3, title: 'Física Universitaria', authorName: 'Sears & Zemansky', totalCopies: 2, availableCopies: 2, description: 'Referencia para estudiantes de ciencias para dominar la física.', hasPdf: true, image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80' },
+        { idBook: 5, idCategory: 2, idAuthor: 5, title: 'Álgebra Lineal y sus Aplicaciones', authorName: 'Gilbert Strang', totalCopies: 1, availableCopies: 0, description: 'Conceptos fundamentales de matrices y espacios vectoriales.', hasPdf: false, image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80' }
+      ];
     }
-
-    // Asegurar que el libro 'Ingeniería de Software' sea eliminado si existía en localStorage
-    this.books = this.books.filter(book => !book.title.toLowerCase().includes('ingeniería de software') && !book.title.toLowerCase().includes('inginiereia de sofware'));
-
-    // Migration and mapping
-    this.books.forEach(book => {
-      // Fix old categories
-      if (!book.idCategory && book.categoryName) {
-        const matchedCat = this.dbCategories.find(c => c.name === book.categoryName);
-        book.idCategory = matchedCat ? matchedCat.idCategory : this.dbCategories[0].idCategory;
-      } else if (!book.idCategory) {
-        book.idCategory = this.dbCategories[0].idCategory; // Default if missing
-      }
-      
-      // Fix old authors
-      if (!book.idAuthor && book.authorName) {
-        // Simple heuristic for migration
-        const matchedAuth = this.dbAuthors.find(a => book.authorName.includes(a.surName));
-        book.idAuthor = matchedAuth ? matchedAuth.idAuthor : this.dbAuthors[0].idAuthor;
-      } else if (!book.idAuthor) {
-        book.idAuthor = this.dbAuthors[0].idAuthor;
-      }
-
-      // Fix empty stock
-      if (book.totalCopies === undefined || book.totalCopies === null || book.totalCopies === 0) {
-        book.totalCopies = 3;
-        book.availableCopies = 3;
-      }
-
-      // Map names for UI
-      const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
-      book.categoryName = cat ? cat.name : 'Sin Categoría';
-      
-      const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
-      book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
-    });
-    
-    // Save migrated books
-    localStorage.setItem('books', JSON.stringify(this.books));
+    this.processBooks();
   }
 
   // Author & Category Inline Creation removed
