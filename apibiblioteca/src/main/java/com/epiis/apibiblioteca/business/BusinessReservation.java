@@ -95,18 +95,30 @@ public class BusinessReservation {
         EntityReservation lastSavedRes = null;
 
         for (String title : request.getBookTitles()) {
-            Optional<EntityBook> bookOpt = repositoryBook.findByTitle(title.trim());
+            String trimmedTitle = title.trim();
+            Optional<EntityBook> bookOpt = repositoryBook.findByTitle(trimmedTitle);
+            if (!bookOpt.isPresent()) {
+                bookOpt = repositoryBook.findByTitleIgnoreCase(trimmedTitle);
+            }
+            if (!bookOpt.isPresent()) {
+                List<EntityBook> list = repositoryBook.findByTitleContainingIgnoreCase(trimmedTitle);
+                if (!list.isEmpty()) {
+                    bookOpt = Optional.of(list.get(0));
+                }
+            }
+
             if (bookOpt.isPresent()) {
                 EntityBook book = bookOpt.get();
                 if (book.getAvailableCopies() > 0) {
                     book.setAvailableCopies(book.getAvailableCopies() - 1);
+                    book.setUpdatedAt(new Date());
                     repositoryBook.save(book);
                 }
 
                 EntityReservation res = new EntityReservation();
                 res.setIdUser(user.getIdUser());
                 res.setIdBook(book.getIdBook());
-                res.setCode(request.getBookTitles().size() > 1 ? "RES" + (1000 + new Random().nextInt(9000)) : randomCode);
+                res.setCode(randomCode);
                 res.setStatus("Pendiente");
 
                 Date now = new Date();

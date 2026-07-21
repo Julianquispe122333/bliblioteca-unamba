@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface RepositoryReservation extends JpaRepository<EntityReservation, Integer> {
     Optional<EntityReservation> findByCode(String code);
+    List<EntityReservation> findAllByCode(String code);
     List<EntityReservation> findByIdUserOrderByCreatedAtDesc(Integer idUser);
 }

@@ -8,4 +8,6 @@ import java.util.Optional;
 @Repository
 public interface RepositoryBook extends JpaRepository<EntityBook, Integer> {
     Optional<EntityBook> findByTitle(String title);
+    Optional<EntityBook> findByTitleIgnoreCase(String title);
+    java.util.List<EntityBook> findByTitleContainingIgnoreCase(String title);
 }

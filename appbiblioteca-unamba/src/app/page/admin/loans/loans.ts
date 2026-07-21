@@ -10,6 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CheckboxModule } from 'primeng/checkbox';
+import { ApiService } from '../../../service/api.service';
 
 interface Book {
   idBook: number;
@@ -69,6 +70,7 @@ interface Loan {
 export class LoanManagement implements OnInit {
   private router = inject(Router);
   private messageService = inject(MessageService);
+  private apiService = inject(ApiService);
 
   books: Book[] = [];
   reservations: Reservation[] = [];
@@ -109,15 +111,33 @@ export class LoanManagement implements OnInit {
   }
 
   loadData(): void {
-    const storedBooks = localStorage.getItem('books');
-    if (storedBooks) {
-      this.books = JSON.parse(storedBooks);
-    }
+    this.apiService.getReservations().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.reservations = res.data;
+        } else {
+          this.loadReservationsLocal();
+        }
+      },
+      error: () => this.loadReservationsLocal()
+    });
 
+    this.apiService.getLoans().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.loans = res.data;
+        } else {
+          this.loadLoansLocal();
+        }
+      },
+      error: () => this.loadLoansLocal()
+    });
+  }
+
+  private loadReservationsLocal(): void {
     const storedReservations = localStorage.getItem('reservations');
     if (storedReservations) {
       this.reservations = JSON.parse(storedReservations);
-      // Expire reservations if dates have passed
       const today = new Date().toISOString().split('T')[0];
       let resModified = false;
       this.reservations.forEach(r => {
@@ -125,8 +145,7 @@ export class LoanManagement implements OnInit {
           r.status = 'Vencido';
           resModified = true;
 
-          // Devolver copia al stock
-          const titles = r.bookTitle.split(',');
+          const titles = (r.bookTitle || '').split(',');
           titles.forEach(t => {
             const book = this.books.find(b => b.title.trim().toLowerCase() === t.trim().toLowerCase());
             if (book) {
@@ -137,24 +156,24 @@ export class LoanManagement implements OnInit {
       });
       if (resModified) {
         localStorage.setItem('reservations', JSON.stringify(this.reservations));
-        localStorage.setItem('books', JSON.stringify(this.books));
       }
     }
+  }
 
+  private loadLoansLocal(): void {
     const storedLoans = localStorage.getItem('loans');
     if (storedLoans) {
       this.loans = JSON.parse(storedLoans);
       const today = new Date().toISOString().split('T')[0];
       let modified = false;
       this.loans.forEach(loan => {
-        if (!loan.loanBooks) {
+        if (!loan.loanBooks && loan.bookTitle) {
           loan.loanBooks = loan.bookTitle.split(',').map(t => ({
             title: t.trim(),
             returned: loan.status === 'Devuelto'
           }));
           modified = true;
         }
-        // Check loan expiration
         if (loan.status === 'Prestado' && loan.dueDate < today) {
           loan.status = 'Vencido';
           modified = true;
@@ -211,11 +230,32 @@ export class LoanManagement implements OnInit {
       return;
     }
 
-    // Update reservation status to Atendido
+    const code = this.foundReservation.code;
+    const title = this.foundReservation.bookTitle;
+
+    this.apiService.createLoanFromReservation(code).subscribe({
+      next: (res) => {
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Préstamo Registrado', 
+          detail: `Préstamo del libro "${title}" fue registrado con éxito en la BD.` 
+        });
+        this.displayLoanDialog = false;
+        this.searchReservationCode = '';
+        this.foundReservation = null;
+        this.loadData();
+      },
+      error: () => {
+        this.registerLoanFromReservationLocal();
+      }
+    });
+  }
+
+  private registerLoanFromReservationLocal(): void {
+    if (!this.foundReservation) return;
     this.foundReservation.status = 'Atendido';
     localStorage.setItem('reservations', JSON.stringify(this.reservations));
 
-    // Create loan
     const newLoan: Loan = {
       idLoan: this.loans.length + 1,
       reservationCode: this.foundReservation.code,
@@ -225,7 +265,7 @@ export class LoanManagement implements OnInit {
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       returnDate: null,
       status: 'Prestado',
-      loanBooks: this.foundReservation.bookTitle.split(',').map(t => ({
+      loanBooks: (this.foundReservation.bookTitle || '').split(',').map(t => ({
         title: t.trim(),
         returned: false
       }))
@@ -256,7 +296,7 @@ export class LoanManagement implements OnInit {
 
     if (match) {
       this.foundLoan = match;
-      this.booksReturningNow = match.loanBooks.filter(lb => !lb.returned).map(lb => lb.title);
+      this.booksReturningNow = (match.loanBooks || []).filter(lb => !lb.returned).map(lb => lb.title);
       this.displayReturnDialog = true;
     } else {
       this.messageService.add({ severity: 'error', summary: 'No encontrado', detail: 'No se encontró ningún préstamo activo o vencido con ese código.' });
@@ -264,20 +304,38 @@ export class LoanManagement implements OnInit {
   }
 
   getPendingBooks(): {title: string, returned: boolean}[] {
-    if (!this.foundLoan) return [];
+    if (!this.foundLoan || !this.foundLoan.loanBooks) return [];
     return this.foundLoan.loanBooks.filter(lb => !lb.returned);
   }
 
   confirmReturnBook(): void {
     if (!this.foundLoan || this.booksReturningNow.length === 0) return;
-    
+
+    const resCode = this.foundLoan.reservationCode;
+
+    this.apiService.returnLoanBooks(resCode, this.booksReturningNow).subscribe({
+      next: (res) => {
+        this.messageService.add({ severity: 'success', summary: 'Devuelto', detail: 'Devolución registrada correctamente en la BD.' });
+        this.displayReturnDialog = false;
+        this.searchReturnCode = '';
+        this.foundLoan = null;
+        this.loadData();
+      },
+      error: () => {
+        this.confirmReturnBookLocal();
+      }
+    });
+  }
+
+  private confirmReturnBookLocal(): void {
+    if (!this.foundLoan) return;
+
     let returnedCount = 0;
     this.booksReturningNow.forEach(title => {
       const lb = this.foundLoan!.loanBooks.find(b => b.title === title);
       if (lb && !lb.returned) {
         lb.returned = true;
         returnedCount++;
-        // Increment stock
         if (this.books.length > 0) {
           const book = this.books.find(b => b.title === title);
           if (book) book.availableCopies++;
@@ -293,9 +351,9 @@ export class LoanManagement implements OnInit {
 
     localStorage.setItem('books', JSON.stringify(this.books));
     localStorage.setItem('loans', JSON.stringify(this.loans));
-    
+
     this.messageService.add({ severity: 'success', summary: 'Devuelto', detail: `Se devolvieron ${returnedCount} libro(s) correctamente.` });
-    
+
     this.displayReturnDialog = false;
     this.searchReturnCode = '';
     this.foundLoan = null;

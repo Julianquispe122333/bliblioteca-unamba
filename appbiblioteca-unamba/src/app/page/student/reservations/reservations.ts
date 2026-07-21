@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../service/api.service';
 
 interface Reservation {
   idReservation: number;
@@ -39,6 +40,7 @@ interface Reservation {
 export class StudentReservations implements OnInit {
   private router = inject(Router);
   private messageService = inject(MessageService);
+  private apiService = inject(ApiService);
 
   studentName: string = '';
   reservations: Reservation[] = [];
@@ -62,6 +64,33 @@ export class StudentReservations implements OnInit {
   }
 
   loadReservations(): void {
+    this.apiService.getReservations().subscribe({
+      next: (res) => {
+        if (res && res.data && res.data.length > 0) {
+          this.reservations = res.data;
+          this.syncLoans();
+        } else {
+          this.loadReservationsLocal();
+        }
+      },
+      error: () => {
+        this.loadReservationsLocal();
+      }
+    });
+  }
+
+  private syncLoans(): void {
+    this.apiService.getLoans().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.activeLoans = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  loadReservationsLocal(): void {
     // Generar un préstamo vencido de prueba para el Estudiante si no tiene ningún préstamo
     let storedReservations = localStorage.getItem('reservations');
     let storedLoans = localStorage.getItem('loans');

@@ -11,6 +11,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { ApiService } from '../../../service/api.service';
 
 interface Category {
   idCategory: number;
@@ -66,6 +67,7 @@ interface Reservation {
 export class StudentCatalog implements OnInit {
   private router = inject(Router);
   private messageService = inject(MessageService);
+  private apiService = inject(ApiService);
 
   studentName: string = '';
   searchQuery: string = '';
@@ -108,6 +110,20 @@ export class StudentCatalog implements OnInit {
   }
 
   loadBooks(): void {
+    this.apiService.getBooks().subscribe({
+      next: (res) => {
+        if (res && res.data && res.data.length > 0) {
+          this.books = res.data;
+          localStorage.setItem('books', JSON.stringify(this.books));
+        } else {
+          this.loadBooksLocal();
+        }
+      },
+      error: () => this.loadBooksLocal()
+    });
+  }
+
+  private loadBooksLocal(): void {
     // 1. Cargar Categorías
     const storedCategories = localStorage.getItem('categories');
     if (storedCategories) {
@@ -234,6 +250,31 @@ export class StudentCatalog implements OnInit {
   }
 
   confirmReservation(): void {
+    const titles = this.selectedBooks.map(b => b.title);
+    this.apiService.createReservation({
+      studentName: this.studentName,
+      bookTitles: titles
+    }).subscribe({
+      next: (res) => {
+        const code = (res && res.data && res.data.code) ? res.data.code : ('RES' + Math.floor(1000 + Math.random() * 9000));
+        this.confirmReservationSuccess(code);
+      },
+      error: () => {
+        this.confirmReservationLocal();
+      }
+    });
+  }
+
+  private confirmReservationSuccess(code: string): void {
+    this.selectedBooks = [];
+    this.displayCartDialog = false;
+    this.displayDetailDialog = false;
+    this.lastReservationCode = code;
+    this.displaySuccessDialog = true;
+    this.loadBooks();
+  }
+
+  private confirmReservationLocal(): void {
     const randomCode = 'RES' + Math.floor(1000 + Math.random() * 9000);
     const titles = this.selectedBooks.map(b => b.title);
 
@@ -266,11 +307,7 @@ export class StudentCatalog implements OnInit {
     allReservations.push(newReservation);
     localStorage.setItem('reservations', JSON.stringify(allReservations));
 
-    this.selectedBooks = [];
-    this.displayCartDialog = false;
-    this.displayDetailDialog = false;
-    this.lastReservationCode = randomCode;
-    this.displaySuccessDialog = true;
+    this.confirmReservationSuccess(randomCode);
   }
 
   viewBookDetail(book: Book): void {
