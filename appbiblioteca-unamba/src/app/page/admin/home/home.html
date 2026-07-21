@@ -1,0 +1,147 @@
+<div class="flex flex-col gap-6 fade-in">
+
+  <!-- ── Welcome Header ── -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h1>
+      <p class="text-sm text-slate-400 mt-0.5">Bienvenido, <span class="font-semibold text-slate-600">{{ adminName }}</span> · {{ today }}</p>
+    </div>
+  </div>
+
+  <!-- ── Stats Cards ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+
+    <!-- Libros -->
+    <div (click)="goToBooks()"
+         class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
+         style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
+      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           style="background: linear-gradient(135deg, rgba(79,70,229,0.03), rgba(99,102,241,0.05));"></div>
+      <div class="relative z-10 flex items-start justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Libros en Catálogo</p>
+          <p class="text-4xl font-black text-slate-800 mt-1.5">{{ totalBooks }}</p>
+          <p class="text-xs text-indigo-500 font-semibold mt-2 flex items-center gap-1">
+            <i class="pi pi-arrow-up-right text-[10px]"></i> Ver inventario
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+             style="background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.15);">
+          <i class="pi pi-book text-xl text-indigo-600"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reservas Pendientes -->
+    <div (click)="goToLoans()"
+         class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
+         style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
+      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           style="background: linear-gradient(135deg, rgba(245,158,11,0.03), rgba(251,191,36,0.05));"></div>
+      <div class="relative z-10 flex items-start justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reservas Pendientes</p>
+          <p class="text-4xl font-black mt-1.5" [ngClass]="pendingReservationsCount > 0 ? 'text-amber-500' : 'text-slate-800'">
+            {{ pendingReservationsCount }}
+          </p>
+          <p class="text-xs font-semibold mt-2 flex items-center gap-1" [ngClass]="pendingReservationsCount > 0 ? 'text-amber-500' : 'text-slate-400'">
+            @if (pendingReservationsCount > 0) {
+              <i class="pi pi-exclamation-circle text-[10px] animate-bounce-short"></i> Requieren atención
+            } @else {
+              <i class="pi pi-check text-[10px]"></i> Al día
+            }
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+             style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.15);">
+          <i class="pi pi-bookmark text-xl text-amber-500"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Préstamos Activos -->
+    <div (click)="goToLoans()"
+         class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
+         style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
+      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           style="background: linear-gradient(135deg, rgba(16,185,129,0.03), rgba(52,211,153,0.05));"></div>
+      <div class="relative z-10 flex items-start justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Préstamos Activos</p>
+          <p class="text-4xl font-black text-emerald-600 mt-1.5">{{ activeLoansCount }}</p>
+          <p class="text-xs text-emerald-500 font-semibold mt-2 flex items-center gap-1">
+            <i class="pi pi-arrow-up-right text-[10px]"></i> Gestionar
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+             style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.15);">
+          <i class="pi pi-check-circle text-xl text-emerald-500"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Préstamos Vencidos -->
+    <div (click)="goToLoans()"
+         class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
+         style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
+      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           style="background: linear-gradient(135deg, rgba(239,68,68,0.03), rgba(248,113,113,0.05));"></div>
+      <div class="relative z-10 flex items-start justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Préstamos Vencidos</p>
+          <p class="text-4xl font-black text-rose-600 mt-1.5">{{ overdueLoansCount }}</p>
+          <p class="text-xs text-rose-500 font-semibold mt-2 flex items-center gap-1">
+            <i class="pi pi-exclamation-triangle text-[10px] animate-pulse"></i> Morosos
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+             style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.15);">
+          <i class="pi pi-exclamation-triangle text-xl text-rose-650"></i>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Reservas Pendientes ── -->
+  <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-white p-6 flex flex-col gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Reservas Pendientes de Atención</h2>
+        <p class="text-xs text-slate-400">Estas reservas esperan ser procesadas. Ve al módulo de Préstamos para registrar la salida del libro.</p>
+      </div>
+    </div>
+
+    <p-table [value]="pendingReservations" styleClass="p-datatable-sm" [rows]="5" [paginator]="true" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr class="border-b border-slate-200 bg-slate-50">
+          <th class="text-xs font-bold text-slate-500 py-3 pl-3">Código</th>
+          <th class="text-xs font-bold text-slate-500 py-3">Estudiante</th>
+          <th class="text-xs font-bold text-slate-500 py-3">Libro</th>
+          <th class="text-xs font-bold text-slate-500 py-3">Fecha</th>
+          <th class="text-xs font-bold text-slate-500 py-3 pr-3">Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-res>
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-all">
+          <td class="text-sm font-mono font-bold text-indigo-600 py-3 pl-3">{{ res.code }}</td>
+          <td class="text-sm text-slate-800 font-medium py-3">{{ res.studentName }}</td>
+          <td class="text-sm text-slate-650 py-3">{{ res.bookTitle }}</td>
+          <td class="text-sm text-slate-400 py-3">{{ res.createdAt }}</td>
+          <td class="py-3 pr-3">
+            <span class="px-2 py-0.5 rounded text-xs bg-amber-55 text-amber-700 font-semibold">Pendiente</span>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="5" class="text-center py-12 text-slate-450 text-sm">
+            <i class="pi pi-inbox text-3xl text-slate-300 mb-2 block"></i>
+            No hay reservas pendientes de atención en este momento.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>

@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+target/
+dist/
+.angular/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+# Logs & Sonar
+*.log
+.scannerwork/

@@ -1,0 +1,224 @@
+<p-toast />
+
+<div class="max-w-2xl mx-auto flex flex-col gap-6 fade-in">
+
+  <!-- ── Process Stepper (always visible, educational) ── -->
+  <div class="rounded-2xl p-5" style="background: linear-gradient(135deg, #fafaff, #f5f3ff); border: 1px solid rgba(99,102,241,0.12);">
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Estado de tu Reserva / Préstamo</p>
+    <div class="grid grid-cols-4 gap-2 relative">
+      <!-- Line connector -->
+      <div class="absolute top-5 left-[12%] right-[12%] h-0.5 hidden sm:block" style="background: linear-gradient(90deg, #c7d2fe, #e0e7ff);"></div>
+
+      <!-- Step 1: Pendiente -->
+      <div class="flex flex-col items-center text-center gap-2 relative z-10">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md"
+             style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+          <i class="pi pi-bookmark text-sm"></i>
+        </div>
+        <div>
+          <p class="text-[10px] font-black text-amber-600 uppercase tracking-wider">Pendiente</p>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-relaxed hidden sm:block">Reserva creada,<br>dura 1 día máximo</p>
+        </div>
+      </div>
+
+      <!-- Step 2: En Préstamo -->
+      <div class="flex flex-col items-center text-center gap-2 relative z-10">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shadow-md"
+             style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: white;">
+          <i class="pi pi-check text-sm"></i>
+        </div>
+        <div>
+          <p class="text-[10px] font-black text-indigo-600 uppercase tracking-wider">En Préstamo</p>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-relaxed hidden sm:block">Libro entregado,<br>tienes 7 días</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Vencido -->
+      <div class="flex flex-col items-center text-center gap-2 relative z-10">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shadow-md"
+             style="background: linear-gradient(135deg, #ef4444, #f87171); color: white;">
+          <i class="pi pi-exclamation-triangle text-sm"></i>
+        </div>
+        <div>
+          <p class="text-[10px] font-black text-rose-600 uppercase tracking-wider">Vencido</p>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-relaxed hidden sm:block">Plazo expirado,<br>entrega inmediata</p>
+        </div>
+      </div>
+
+      <!-- Step 4: Completado -->
+      <div class="flex flex-col items-center text-center gap-2 relative z-10">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shadow-md"
+             style="background: linear-gradient(135deg, #10b981, #34d399); color: white;">
+          <i class="pi pi-star text-sm"></i>
+        </div>
+        <div>
+          <p class="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Completado</p>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-relaxed hidden sm:block">Libro devuelto,<br>proceso terminado</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTROL DE RESERVAS Y PRÉSTAMOS (Unificado y coherente) ── -->
+  <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+      <h2 class="text-lg font-bold text-slate-800">Mi Historial y Estado de Pedidos</h2>
+      <p class="text-xs text-slate-400 mt-0.5">Monitorea en tiempo real tus reservas creadas y libros en posesión</p>
+    </div>
+
+    <div class="p-4 flex flex-col gap-4">
+      @for (res of reservations; track res.idReservation) {
+        
+        <!-- Tarjeta Unificada de Solicitud/Reserva -->
+        <div class="p-4 rounded-xl flex flex-col gap-3 border border-slate-200" style="background: #f8fafc;">
+          
+          <!-- Encabezado de la Reserva -->
+          <div class="flex justify-between items-start gap-2">
+            <div class="flex-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Código de Reserva</span>
+              <span class="font-mono font-black text-indigo-700 text-lg tracking-wider">{{ res.code }}</span>
+              <p class="text-xs text-slate-400 mt-1">Solicitado el: {{ res.createdAt }}</p>
+            </div>
+            
+            <!-- Estado Visual del Stepper según el flujo -->
+            <div class="flex flex-col items-end gap-1.5 font-bold uppercase tracking-wider">
+              <span class="status-badge"
+                    [ngClass]="{
+                      'pending': res.status === 'Pendiente',
+                      'active': res.status === 'Atendido' && !isReservationFullyReturned(res.code) && !isReservationOverdue(res.code),
+                      'done': res.status === 'Atendido' && isReservationFullyReturned(res.code),
+                      'overdue': res.status === 'Atendido' && isReservationOverdue(res.code),
+                      'expired': res.status === 'Vencido'
+                    }">
+                <i class="pi pi-circle-fill text-[7px]"></i>
+                @if (res.status === 'Pendiente') { Pendiente }
+                @else if (res.status === 'Atendido') {
+                  @if (isReservationFullyReturned(res.code)) {
+                    Completado
+                  } @else if (isReservationOverdue(res.code)) {
+                    Vencido
+                  } @else {
+                    En Préstamo
+                  }
+                }
+                @else { Expirado }
+              </span>
+            </div>
+          </div>
+
+          <!-- Listado de Libros dentro de este código -->
+          <div class="border-t border-slate-200/60 pt-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Libros Vinculados</span>
+            <div class="flex flex-col gap-2">
+              @if (res.bookTitles && res.bookTitles.length > 0) {
+                @for (title of res.bookTitles; track title) {
+                  <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white border border-slate-100">
+                    <span class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      <i class="pi pi-book text-slate-400 text-xs"></i>
+                      {{ title }}
+                    </span>
+                    
+                    <!-- Estado individual por cada libro -->
+                    @if (res.status === 'Pendiente') {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700">Pendiente</span>
+                    } @else if (res.status === 'Atendido') {
+                      @if (activeLoans.length > 0) {
+                        @for (loan of activeLoans; track loan.idLoan) {
+                          @if (loan.reservationCode === res.code) {
+                            @for (lb of loan.loanBooks; track lb.title) {
+                              @if (lb.title === title) {
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
+                                      [ngClass]="{
+                                        'bg-emerald-100 text-emerald-700': lb.returned,
+                                        'bg-indigo-100 text-indigo-750': !lb.returned && loan.status !== 'Vencido',
+                                        'bg-rose-100 text-rose-700': !lb.returned && loan.status === 'Vencido'
+                                      }">
+                                  {{ lb.returned ? 'Completado' : (loan.status === 'Vencido' ? 'Vencido' : 'En Préstamo') }}
+                                </span>
+                              }
+                            }
+                          }
+                        }
+                      } @else {
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-100 text-indigo-750">En Préstamo</span>
+                      }
+                    } @else {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-rose-100 text-rose-700">Expirado</span>
+                    }
+                  </div>
+                }
+              } @else {
+                <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white border border-slate-100">
+                  <span class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <i class="pi pi-book text-slate-400 text-xs"></i>
+                    {{ res.bookTitle }}
+                  </span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
+                        [ngClass]="{
+                          'bg-amber-100 text-amber-700': res.status === 'Pendiente',
+                          'bg-indigo-100 text-indigo-750': res.status === 'Atendido' && !isReservationOverdue(res.code),
+                          'bg-rose-100 text-rose-700': res.status === 'Vencido' || (res.status === 'Atendido' && isReservationOverdue(res.code))
+                        }">
+                    @if (res.status === 'Pendiente') { Pendiente }
+                    @else if (res.status === 'Atendido') {
+                      {{ isReservationOverdue(res.code) ? 'Vencido' : 'En Préstamo' }}
+                    } @else {
+                      Expirado
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Pie del Pedido con información de vencimiento y fecha -->
+          <div class="border-t border-slate-200/60 pt-3 flex justify-between items-center text-xs text-slate-500">
+            <span>
+              @if (res.status === 'Pendiente') { Vence para retiro: }
+              @else if (res.status === 'Atendido') {
+                @if (isReservationFullyReturned(res.code)) {
+                  Devuelto el:
+                } @else {
+                  {{ isReservationOverdue(res.code) ? 'Plazo vencido el:' : 'Devolución estimada:' }}
+                }
+              }
+              @else { Expirado el: }
+            </span>
+            <span class="font-bold" [ngClass]="{
+              'text-rose-600 font-extrabold': res.status === 'Vencido' || isReservationOverdue(res.code),
+              'text-emerald-600 font-extrabold': res.status === 'Atendido' && isReservationFullyReturned(res.code),
+              'text-slate-700': res.status === 'Pendiente' || (res.status === 'Atendido' && !isReservationFullyReturned(res.code) && !isReservationOverdue(res.code))
+            }">
+              {{ getTargetDate(res) }}
+            </span>
+          </div>
+
+        </div>
+
+      } @empty {
+        <!-- ── Estado vacío ── -->
+        <div class="py-16 flex flex-col items-center justify-center text-center gap-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center"
+               style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08)); border: 2px dashed rgba(99,102,241,0.2);">
+            <i class="pi pi-bookmark text-3xl" style="color: #c7d2fe;"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-lg text-slate-700">Sin movimientos aún</h3>
+            <p class="text-sm text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">
+              Explora el catálogo para agregar tus libros favoritos y solicitar una nueva reserva en un solo paso.
+            </p>
+          </div>
+          <button (click)="goToCatalog()"
+                  class="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer shadow-lg"
+                  style="background: linear-gradient(135deg, #4f46e5, #6366f1); border: none; box-shadow: 0 8px 20px rgba(79,70,229,0.3);"
+                  onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='translateY(-2px)'"
+                  onmouseout="this.style.filter='none'; this.style.transform='translateY(0)'">
+            <i class="pi pi-book"></i>
+            Explorar Catálogo
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+</div>

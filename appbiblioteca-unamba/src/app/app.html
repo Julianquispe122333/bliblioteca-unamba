@@ -1,0 +1,100 @@
+@if (isLoginPage) {
+  <router-outlet />
+} @else {
+  <!-- Premium App Shell -->
+  <div class="min-h-screen flex flex-col" style="background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #faf5ff 100%);">
+    
+    <!-- ── Premium Header ── -->
+    <header class="sticky top-0 z-50 transition-all duration-300"
+            style="background: rgba(255,255,255,0.82); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226,232,240,0.8); box-shadow: 0 1px 20px -10px rgba(0,0,0,0.12);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between gap-4">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="gradient-bg-primary p-2.5 rounded-xl shadow-lg text-white" style="box-shadow: 0 4px 15px rgba(79,70,229,0.4);">
+            <i class="pi pi-book text-xl"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="font-black text-[17px] text-slate-800 tracking-tight">
+              BIBLIOTECA<span class="gradient-text">UNAMBA</span>
+            </span>
+            <span class="text-[9px] font-bold tracking-[0.15em] text-slate-400 uppercase mt-0.5">Sistema Integrado</span>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="hidden md:flex items-center gap-1 p-1 rounded-2xl" style="background: rgba(241,245,249,0.7); border: 1px solid rgba(226,232,240,0.5);">
+          @for (option of menuOptions; track option.route) {
+            <a [routerLink]="option.route"
+               [ngClass]="option.active
+                 ? 'bg-white text-indigo-700 shadow-sm font-bold'
+                 : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'"
+               class="px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 relative">
+              @if (option.active) {
+                <span class="absolute inset-0 rounded-xl ring-1 ring-indigo-200/60"></span>
+              }
+              <i class="pi pi-{{option.icon}} text-[14px]"
+                 [ngClass]="option.active ? 'text-indigo-500' : 'text-slate-400'"></i>
+              <span>{{option.text}}</span>
+              @if (option.active) {
+                <span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-500 rounded-full"></span>
+              }
+            </a>
+          }
+        </nav>
+
+        <!-- User Zone -->
+        <div class="flex items-center gap-3 shrink-0">
+          <!-- Role badge + User info -->
+          <div class="hidden sm:flex flex-col items-end gap-0.5">
+            <span class="text-sm font-bold text-slate-700 leading-none">{{ username }}</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                  [ngClass]="userRole === 'admin'
+                    ? 'bg-violet-100 text-violet-700'
+                    : 'bg-indigo-100 text-indigo-700'">
+              {{ userRole === 'admin' ? 'Administrador' : 'Estudiante' }}
+            </span>
+          </div>
+
+          <!-- Avatar -->
+          <div class="relative w-10 h-10 rounded-full flex items-center justify-center font-black text-base text-white shadow-md cursor-pointer"
+               [ngClass]="userRole === 'admin' ? 'gradient-bg-primary' : ''"
+               [style]="userRole !== 'admin' ? 'background: linear-gradient(135deg, #6366f1, #8b5cf6)' : ''">
+            {{ username.charAt(0).toUpperCase() }}
+            <!-- Online indicator -->
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+          </div>
+
+          <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
+
+          <!-- Logout -->
+          <button (click)="logout()"
+                  class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all duration-200 cursor-pointer"
+                  title="Cerrar Sesión">
+            <i class="pi pi-sign-out text-[15px]"></i>
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="md:hidden flex justify-around items-center bg-white/90 backdrop-blur-md border-t border-slate-200/60 py-2 px-4 fixed bottom-0 left-0 right-0 z-50 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]">
+      @for (option of menuOptions; track option.route) {
+        <a [routerLink]="option.route"
+           [ngClass]="option.active ? 'text-indigo-600' : 'text-slate-400'"
+           class="flex flex-col items-center gap-1 text-[10px] font-bold transition-all py-1 px-3 rounded-xl"
+           [style]="option.active ? 'background: rgba(99,102,241,0.08)' : ''">
+          <i class="pi pi-{{option.icon}} text-[18px]"></i>
+          <span>{{option.text}}</span>
+        </a>
+      }
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 fade-in">
+      <router-outlet />
+    </main>
+
+  </div>
+}
