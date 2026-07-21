@@ -283,60 +283,93 @@ export class BookCrud implements OnInit {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.books = this.books.filter(b => b.idBook !== book.idBook);
-        localStorage.setItem('books', JSON.stringify(this.books));
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Eliminado',
-          detail: 'El libro fue eliminado correctamente.',
-          life: 3000
+        this.apiService.deleteBook(book.idBook).subscribe({
+          next: () => {
+            this.loadData();
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminado',
+              detail: 'El libro fue eliminado correctamente de la BD.',
+              life: 3000
+            });
+          },
+          error: () => {
+            this.books = this.books.filter(b => b.idBook !== book.idBook);
+            localStorage.setItem('books', JSON.stringify(this.books));
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Eliminado',
+              detail: 'El libro fue eliminado correctamente.',
+              life: 3000
+            });
+          }
         });
       }
     });
   }
 
   saveBook(): void {
-    if (this.bookForm.valid) {
-      const bookData = this.bookForm.value;
-      
-      if (bookData.availableCopies > bookData.totalCopies) {
-        this.messageService.add({ severity: 'error', summary: 'Error de Stock', detail: 'Las copias disponibles no pueden superar a las copias totales.' });
-        return;
-      }
+    if (this.bookForm.invalid) return;
 
-      let catName = 'Sin Categoría';
-      if (typeof bookData.idCategory === 'string') {
-         catName = bookData.idCategory;
-      } else {
-         const cat = this.dbCategories.find(c => c.idCategory === bookData.idCategory);
-         if (cat) catName = cat.name;
-      }
-
-      let authName = 'Desconocido';
-      if (typeof bookData.idAuthor === 'string') {
-         authName = bookData.idAuthor;
-      } else {
-         const auth = this.dbAuthors.find(a => a.idAuthor === bookData.idAuthor);
-         if (auth) authName = auth.fullName || `${auth.firstName} ${auth.surName}`;
-      }
-
-      this.bookSummary = {
-        title: bookData.title,
-        category: catName,
-        author: authName,
-        totalCopies: bookData.totalCopies,
-        availableCopies: bookData.availableCopies
-      };
-      
-      this.bookDataToSave = bookData;
-      this.displayConfirmBook = true;
+    const bookData = this.bookForm.value;
+    
+    if (bookData.availableCopies > bookData.totalCopies) {
+      this.messageService.add({ severity: 'error', summary: 'Error de Stock', detail: 'Las copias disponibles no pueden superar a las copias totales.' });
+      return;
     }
+
+    let categoryId: number | undefined = undefined;
+    let categoryName: string | undefined = undefined;
+    if (typeof bookData.idCategory === 'number') {
+      categoryId = bookData.idCategory;
+    } else if (typeof bookData.idCategory === 'string' && bookData.idCategory.trim()) {
+      categoryName = bookData.idCategory.trim();
+    }
+
+    let authorId: number | undefined = undefined;
+    let authorName: string | undefined = undefined;
+    if (typeof bookData.idAuthor === 'number') {
+      authorId = bookData.idAuthor;
+    } else if (typeof bookData.idAuthor === 'string' && bookData.idAuthor.trim()) {
+      authorName = bookData.idAuthor.trim();
+    }
+
+    const payload = {
+      idBook: this.isEditMode ? this.selectedBookId : undefined,
+      idCategory: categoryId,
+      categoryName: categoryName,
+      idAuthor: authorId,
+      authorName: authorName,
+      title: bookData.title,
+      totalCopies: bookData.totalCopies,
+      availableCopies: bookData.availableCopies,
+      description: bookData.description,
+      hasPdf: bookData.hasPdf,
+      image: bookData.image
+    };
+
+    this.apiService.saveBook(payload).subscribe({
+      next: () => {
+        this.loadData();
+        this.messageService.add({
+          severity: 'success',
+          summary: this.isEditMode ? 'Actualizado' : 'Guardado',
+          detail: this.isEditMode ? 'Libro actualizado exitosamente en la BD.' : 'Nuevo libro guardado en la BD.'
+        });
+        this.bookDialog = false;
+        this.displayConfirmBook = false;
+      },
+      error: () => {
+        this.confirmSaveBookLocal(bookData);
+      }
+    });
   }
 
   confirmSaveBook(): void {
-      const bookData = this.bookDataToSave;
-      
-      // Auto-generate Category
+    this.saveBook();
+  }
+
+  private confirmSaveBookLocal(bookData: any): void {
       if (typeof bookData.idCategory === 'string') {
         const newCat: Category = {
           idCategory: this.dbCategories.length > 0 ? Math.max(...this.dbCategories.map(c => c.idCategory)) + 1 : 1,
@@ -349,7 +382,6 @@ export class BookCrud implements OnInit {
       const cat = this.dbCategories.find(c => c.idCategory === bookData.idCategory);
       const categoryName = cat ? cat.name : 'Sin Categoría';
       
-      // Auto-generate Author
       if (typeof bookData.idAuthor === 'string') {
         const parts = bookData.idAuthor.trim().split(' ');
         const firstName = parts[0];
@@ -372,7 +404,7 @@ export class BookCrud implements OnInit {
         const index = this.books.findIndex(b => b.idBook === this.selectedBookId);
         if (index !== -1) {
           this.books[index] = { ...this.books[index], ...bookData, categoryName, authorName };
-          this.books = [...this.books]; // trigger change detection for p-table
+          this.books = [...this.books];
         }
         this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Libro actualizado exitosamente.' });
       } else {
@@ -382,7 +414,7 @@ export class BookCrud implements OnInit {
           categoryName,
           authorName
         };
-        this.books = [...this.books, newBook]; // trigger change detection
+        this.books = [...this.books, newBook];
         this.messageService.add({ severity: 'success', summary: 'Creado', detail: 'Libro agregado al catálogo.' });
       }
 
