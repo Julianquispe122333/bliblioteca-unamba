@@ -13,6 +13,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { AdminAuthors } from '../authors/authors';
 import { AdminCategories } from '../categories/categories';
 import { ApiService } from '../../../service/api.service';
@@ -44,8 +45,6 @@ interface Book {
   pdfUrl?: string;
   image: string;
 }
-
-import { AutoCompleteModule } from 'primeng/autocomplete';
 
 @Component({
   selector: 'app-book-crud',
