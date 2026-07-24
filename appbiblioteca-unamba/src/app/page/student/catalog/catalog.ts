@@ -29,6 +29,8 @@ interface Book {
   availableCopies: number;
   description: string;
   hasPdf: boolean;
+  pdfFileName?: string;
+  pdfUrl?: string;
   image: string;
 }
 
@@ -296,7 +298,16 @@ export class StudentCatalog implements OnInit {
   }
 
   openPdfView(): void {
-    this.displayPdfDialog = true;
+    if (this.selectedBook?.pdfUrl) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<title>${this.selectedBook.title} - PDF</title><style>html,body{margin:0;height:100%;overflow:hidden;}</style><iframe width="100%" height="100%" src="${this.selectedBook.pdfUrl}" frameborder="0"></iframe>`);
+      } else {
+        this.displayPdfDialog = true;
+      }
+    } else {
+      this.displayPdfDialog = true;
+    }
   }
 
   copyCode(code: string): void {

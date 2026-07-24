@@ -1,12 +1,10 @@
 package com.epiis.apibiblioteca.business;
 
-import java.util.Date;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import com.epiis.apibiblioteca.dto.request.RequestLogin;
 import com.epiis.apibiblioteca.dto.response.ResponseLogin;
 import com.epiis.apibiblioteca.entity.EntityUser;
-import com.epiis.apibiblioteca.generic.ResponseDataGeneric;
 import com.epiis.apibiblioteca.repository.RepositoryUser;
 
 @Service
@@ -39,14 +37,14 @@ public class BusinessAuth {
         EntityUser user = optionalUser.get();
 
         // Validar Correo Institucional
-        if (!user.getEmail().equalsIgnoreCase(reqEmail)) {
+        if (!reqEmail.isEmpty() && !user.getEmail().equalsIgnoreCase(reqEmail)) {
             response.error();
             response.listMessage.add("El correo institucional ingresado no coincide con el registrado");
             return response;
         }
 
         // Validar Código Universitario
-        if (!user.getUniversityCode().equalsIgnoreCase(reqCode)) {
+        if (!reqCode.isEmpty() && !user.getUniversityCode().equalsIgnoreCase(reqCode)) {
             response.error();
             response.listMessage.add("El código universitario ingresado es incorrecto");
             return response;

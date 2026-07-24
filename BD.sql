@@ -186,6 +186,7 @@ INSERT INTO tbook (idBook, idCategory, idAuthor, idUser, title, totalCopies, ava
 (1, 1, 1, 1, 'Introducción a la Programación con Python', 5, 5, 'Guía introductoria para aprender Python paso a paso.', 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&q=80', NOW(), NOW()),
 (2, 2, 2, 1, 'Cálculo de una Variable', 3, 2, 'Libro de texto clásico de cálculo riguroso.', 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80', NOW(), NOW()),
 (3, 3, 3, 1, 'Física Universitaria', 2, 2, 'Referencia para estudiantes de ciencias para dominar la física.', 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80', NOW(), NOW()),
+(4, 1, 4, 1, 'Ingeniería de Software: Un Enfoque Práctico', 4, 4, 'Estudio completo de metodologías y procesos de desarrollo de software.', 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80', NOW(), NOW()),
 (5, 2, 5, 1, 'Álgebra Lineal y sus Aplicaciones', 1, 0, 'Conceptos fundamentales de matrices y espacios vectoriales.', 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80', NOW(), NOW());
 
 -- PDF simulados

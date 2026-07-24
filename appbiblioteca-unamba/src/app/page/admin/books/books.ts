@@ -40,6 +40,8 @@ interface Book {
   availableCopies: number;
   description: string;
   hasPdf: boolean;
+  pdfFileName?: string;
+  pdfUrl?: string;
   image: string;
 }
 
@@ -153,6 +155,8 @@ export class BookCrud implements OnInit {
       availableCopies: [null, [Validators.required, Validators.min(0)]],
       description: ['', Validators.required],
       hasPdf: [false],
+      pdfFileName: [''],
+      pdfUrl: [''],
       image: ['https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80']
     }, { validators: this.copiesValidator });
   }
@@ -254,6 +258,8 @@ export class BookCrud implements OnInit {
       availableCopies: null,
       description: '',
       hasPdf: false,
+      pdfFileName: '',
+      pdfUrl: '',
       image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80'
     });
     this.bookDialog = true;
@@ -270,6 +276,8 @@ export class BookCrud implements OnInit {
       availableCopies: book.availableCopies,
       description: book.description,
       hasPdf: book.hasPdf,
+      pdfFileName: book.pdfFileName || '',
+      pdfUrl: book.pdfUrl || '',
       image: book.image
     });
     this.bookDialog = true;
@@ -345,6 +353,8 @@ export class BookCrud implements OnInit {
       availableCopies: bookData.availableCopies,
       description: bookData.description,
       hasPdf: bookData.hasPdf,
+      pdfFileName: bookData.pdfFileName,
+      pdfUrl: bookData.pdfUrl,
       image: bookData.image
     };
 
@@ -423,13 +433,48 @@ export class BookCrud implements OnInit {
       this.bookDialog = false;
   }
 
-  simulatePdfUpload(): void {
-    this.bookForm.patchValue({ hasPdf: true });
-    this.messageService.add({ severity: 'info', summary: 'PDF Agregado', detail: 'Archivo PDF adjuntado correctamente (simulado).', life: 2000 });
+  onImageFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.messageService.add({ severity: 'error', summary: 'Archivo inválido', detail: 'Por favor selecciona un archivo de imagen (PNG, JPG, WEBP).' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Url = reader.result as string;
+      this.bookForm.patchValue({ image: base64Url });
+      this.messageService.add({ severity: 'success', summary: 'Imagen cargada', detail: `Portada "${file.name}" cargada correctamente.`, life: 2500 });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onPdfFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.messageService.add({ severity: 'error', summary: 'Archivo inválido', detail: 'Por favor selecciona un archivo en formato PDF.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Url = reader.result as string;
+      this.bookForm.patchValue({
+        hasPdf: true,
+        pdfFileName: file.name,
+        pdfUrl: base64Url
+      });
+      this.messageService.add({ severity: 'success', summary: 'PDF Adjuntado', detail: `Archivo "${file.name}" cargado de tu equipo.`, life: 3000 });
+    };
+    reader.readAsDataURL(file);
   }
 
   removePdf(): void {
-    this.bookForm.patchValue({ hasPdf: false });
+    this.bookForm.patchValue({ hasPdf: false, pdfFileName: '', pdfUrl: '' });
     this.messageService.add({ severity: 'warn', summary: 'PDF Eliminado', detail: 'Se quitó el archivo PDF.', life: 2000 });
   }
 }

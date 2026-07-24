@@ -192,7 +192,7 @@ export class LoanManagement implements OnInit {
     }
 
     const code = this.searchReservationCode.trim().toUpperCase();
-    const match = this.reservations.find(r => r.code === code);
+    const match = this.reservations.find(r => r.code?.toUpperCase() === code);
 
     if (match) {
       if (match.status === 'Atendido') {
@@ -292,7 +292,7 @@ export class LoanManagement implements OnInit {
     }
 
     const code = this.searchReturnCode.trim().toUpperCase();
-    const match = this.loans.find(l => l.reservationCode === code && (l.status === 'Prestado' || l.status === 'Vencido'));
+    const match = this.loans.find(l => l.reservationCode?.toUpperCase() === code && (l.status === 'Prestado' || l.status === 'Vencido'));
 
     if (match) {
       this.foundLoan = match;

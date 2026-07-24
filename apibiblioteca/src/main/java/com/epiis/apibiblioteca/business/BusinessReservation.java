@@ -46,13 +46,11 @@ public class BusinessReservation {
             .filter(u -> (u.getFirstName() + " " + u.getSurName()).equalsIgnoreCase(studentName) || u.getEmail().contains(studentName.toLowerCase().replace(" ", ".")))
             .findFirst();
 
-        List<EntityReservation> list;
-        if (userOpt.isPresent()) {
-            list = repositoryReservation.findByIdUserOrderByCreatedAtDesc(userOpt.get().getIdUser());
-        } else {
-            list = repositoryReservation.findAll();
+        if (userOpt.isEmpty()) {
+            return new ResponseDataGeneric<>(new ArrayList<>());
         }
 
+        List<EntityReservation> list = repositoryReservation.findByIdUserOrderByCreatedAtDesc(userOpt.get().getIdUser());
         return new ResponseDataGeneric<>(groupReservations(list));
     }
 
@@ -65,7 +63,6 @@ public class BusinessReservation {
             return response;
         }
 
-        // Buscar o crear estudiante con su nombre real
         String rawName = request.getStudentName() != null && !request.getStudentName().trim().isEmpty() ? request.getStudentName().trim() : "Estudiante UNAMBA";
         String[] nameParts = rawName.split(" ");
         String fName = nameParts[0];
@@ -88,7 +85,13 @@ public class BusinessReservation {
             user = repositoryUser.save(user);
         }
 
-        String randomCode = "RES" + (1000 + new Random().nextInt(9000));
+        String randomCode;
+        boolean exists = true;
+        do {
+            randomCode = "RES" + (1000 + new Random().nextInt(9000));
+            exists = !repositoryReservation.findAllByCode(randomCode).isEmpty();
+        } while (exists);
+
         EntityReservation lastSavedRes = null;
 
         for (String title : request.getBookTitles()) {
@@ -106,11 +109,15 @@ public class BusinessReservation {
 
             if (bookOpt.isPresent()) {
                 EntityBook book = bookOpt.get();
-                if (book.getAvailableCopies() > 0) {
-                    book.setAvailableCopies(book.getAvailableCopies() - 1);
-                    book.setUpdatedAt(new Date());
-                    repositoryBook.save(book);
+                if (book.getAvailableCopies() <= 0) {
+                    response.error();
+                    response.listMessage.add("El libro " + book.getTitle() + " no tiene copias disponibles.");
+                    return response;
                 }
+                
+                book.setAvailableCopies(book.getAvailableCopies() - 1);
+                book.setUpdatedAt(new Date());
+                repositoryBook.save(book);
 
                 EntityReservation res = new EntityReservation();
                 res.setIdUser(user.getIdUser());
@@ -121,7 +128,7 @@ public class BusinessReservation {
                 Date now = new Date();
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(now);
-                cal.add(Calendar.DAY_OF_MONTH, 1); // Expiración en 1 día
+                cal.add(Calendar.DAY_OF_MONTH, 1);
 
                 res.setExpirationDate(cal.getTime());
                 res.setCreatedAt(now);

@@ -47,14 +47,14 @@ public class BusinessLoan {
     public ResponseDataGeneric<ResponseLoan> createFromReservation(RequestLoanCreate request) {
         ResponseDataGeneric<ResponseLoan> response = new ResponseDataGeneric<>();
         
-        Optional<EntityReservation> resOpt = repositoryReservation.findByCode(request.getReservationCode().trim().toUpperCase());
-        if (!resOpt.isPresent()) {
+        List<EntityReservation> resList = repositoryReservation.findAllByCode(request.getReservationCode().trim().toUpperCase());
+        if (resList.isEmpty()) {
             response.error();
             response.listMessage.add("No existe ninguna reserva con ese código");
             return response;
         }
 
-        EntityReservation res = resOpt.get();
+        EntityReservation res = resList.get(0);
         if ("Atendido".equalsIgnoreCase(res.getStatus())) {
             response.error();
             response.listMessage.add("Esta reserva ya fue atendida");
@@ -66,9 +66,11 @@ public class BusinessLoan {
             return response;
         }
 
-        res.setStatus("Atendido");
-        res.setUpdatedAt(new Date());
-        repositoryReservation.save(res);
+        for (EntityReservation r : resList) {
+            r.setStatus("Atendido");
+            r.setUpdatedAt(new Date());
+            repositoryReservation.save(r);
+        }
 
         Date now = new Date();
         Calendar cal = Calendar.getInstance();
@@ -97,14 +99,14 @@ public class BusinessLoan {
     public ResponseDataGeneric<ResponseLoan> returnBooks(RequestLoanReturn request) {
         ResponseDataGeneric<ResponseLoan> response = new ResponseDataGeneric<>();
         
-        Optional<EntityReservation> resOpt = repositoryReservation.findByCode(request.getReservationCode().trim().toUpperCase());
-        if (!resOpt.isPresent()) {
+        List<EntityReservation> resList = repositoryReservation.findAllByCode(request.getReservationCode().trim().toUpperCase());
+        if (resList.isEmpty()) {
             response.error();
             response.listMessage.add("No se encontró ninguna reserva/préstamo con ese código");
             return response;
         }
 
-        EntityReservation res = resOpt.get();
+        EntityReservation res = resList.get(0);
         Optional<EntityLoan> loanOpt = repositoryLoan.findByIdReservation(res.getIdReservation());
 
         if (!loanOpt.isPresent()) {
@@ -118,10 +120,12 @@ public class BusinessLoan {
         loan.setReturnDate(new Date());
         loan.setUpdatedAt(new Date());
 
-        if (res.getBook() != null) {
-            EntityBook b = res.getBook();
-            b.setAvailableCopies(b.getAvailableCopies() + 1);
-            repositoryBook.save(b);
+        for (EntityReservation r : resList) {
+            if (r.getBook() != null) {
+                EntityBook b = r.getBook();
+                b.setAvailableCopies(b.getAvailableCopies() + 1);
+                repositoryBook.save(b);
+            }
         }
 
         EntityLoan updatedLoan = repositoryLoan.save(loan);

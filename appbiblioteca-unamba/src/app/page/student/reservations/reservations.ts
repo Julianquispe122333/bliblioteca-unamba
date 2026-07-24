@@ -68,13 +68,19 @@ export class StudentReservations implements OnInit {
     this.apiService.getStudentReservations(studentToFind).subscribe({
       next: (res) => {
         if (res && res.data && res.data.length > 0) {
-          this.reservations = res.data;
+          // BUG-07 FIX: Filtrar solo las reservas del estudiante logueado
+          this.reservations = res.data.filter(
+            (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
+          );
           this.syncLoans();
         } else {
           this.apiService.getReservations().subscribe({
             next: (allRes) => {
               if (allRes && allRes.data && allRes.data.length > 0) {
-                this.reservations = allRes.data;
+                // BUG-07 FIX: Filtrar por nombre del estudiante logueado
+                this.reservations = allRes.data.filter(
+                  (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
+                );
               } else {
                 this.loadReservationsLocal();
               }
