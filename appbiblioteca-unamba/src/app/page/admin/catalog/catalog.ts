@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
+import { ApiService } from '../../../service/api.service';
 
 interface Category {
   idCategory: number;
@@ -42,6 +43,7 @@ interface Book {
 })
 export class AdminCatalog implements OnInit {
   private router = inject(Router);
+  private apiService = inject(ApiService);
 
   dbCategories: Category[] = [];
   dbAuthors: any[] = [];
@@ -70,7 +72,47 @@ export class AdminCatalog implements OnInit {
   }
 
   loadBooks(): void {
-    // Cargar Categorías
+    // 1. Cargar Categorías desde API
+    this.apiService.getCategories().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.dbCategories = res.data;
+          localStorage.setItem('categories', JSON.stringify(this.dbCategories));
+        } else {
+          this.loadCategoriesLocal();
+        }
+      },
+      error: () => this.loadCategoriesLocal()
+    });
+
+    // 2. Cargar Autores desde API
+    this.apiService.getAuthors().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.dbAuthors = res.data;
+          localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
+        } else {
+          this.loadAuthorsLocal();
+        }
+      },
+      error: () => this.loadAuthorsLocal()
+    });
+
+    // 3. Cargar Libros desde API
+    this.apiService.getBooks().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.books = res.data;
+          this.processBooks();
+        } else {
+          this.loadBooksLocal();
+        }
+      },
+      error: () => this.loadBooksLocal()
+    });
+  }
+
+  private loadCategoriesLocal(): void {
     const storedCategories = localStorage.getItem('categories');
     if (storedCategories) {
       this.dbCategories = JSON.parse(storedCategories);
@@ -81,10 +123,10 @@ export class AdminCatalog implements OnInit {
         { idCategory: 3, name: 'Física' },
         { idCategory: 4, name: 'Literatura' }
       ];
-      localStorage.setItem('categories', JSON.stringify(this.dbCategories));
     }
+  }
 
-    // Cargar Autores
+  private loadAuthorsLocal(): void {
     const storedAuthors = localStorage.getItem('authors');
     if (storedAuthors) {
       this.dbAuthors = JSON.parse(storedAuthors);
@@ -96,25 +138,30 @@ export class AdminCatalog implements OnInit {
         { idAuthor: 4, firstName: 'Roger', surName: 'Pressman' },
         { idAuthor: 5, firstName: 'Gilbert', surName: 'Strang' }
       ];
-      localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
     }
+  }
 
-    // Cargar Libros
+  private loadBooksLocal(): void {
     const storedBooks = localStorage.getItem('books');
     if (storedBooks) {
       this.books = JSON.parse(storedBooks);
     }
+    this.processBooks();
+  }
 
-    // Mapear nombres de categorías a los libros para mostrar en UI y migrar datos
+  private processBooks(): void {
     this.books.forEach(book => {
-      // Migración
       if (!book.idCategory && book.categoryName) {
         const matchedCat = this.dbCategories.find(c => c.name === book.categoryName);
         if (matchedCat) book.idCategory = matchedCat.idCategory;
       }
-
       const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
-      book.categoryName = cat ? cat.name : 'Sin Categoría';
+      book.categoryName = cat ? cat.name : (book.categoryName || 'Sin Categoría');
+
+      if (!book.authorName && book.idAuthor) {
+        const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
+        book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
+      }
     });
     localStorage.setItem('books', JSON.stringify(this.books));
   }

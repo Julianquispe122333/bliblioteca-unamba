@@ -112,11 +112,33 @@ export class StudentCatalog implements OnInit {
   }
 
   loadBooks(): void {
-    this.loadCategoriesAndAuthors();
+    this.apiService.getCategories().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.dbCategories = res.data;
+          localStorage.setItem('categories', JSON.stringify(this.dbCategories));
+        } else {
+          this.loadCategoriesLocal();
+        }
+      },
+      error: () => this.loadCategoriesLocal()
+    });
+
+    this.apiService.getAuthors().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.dbAuthors = res.data;
+          localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
+        } else {
+          this.loadAuthorsLocal();
+        }
+      },
+      error: () => this.loadAuthorsLocal()
+    });
 
     this.apiService.getBooks().subscribe({
       next: (res) => {
-        if (res && res.data && res.data.length > 0) {
+        if (res && res.data) {
           this.books = res.data;
           this.processBooks();
         } else {
@@ -127,7 +149,7 @@ export class StudentCatalog implements OnInit {
     });
   }
 
-  private loadCategoriesAndAuthors(): void {
+  private loadCategoriesLocal(): void {
     const storedCategories = localStorage.getItem('categories');
     if (storedCategories) {
       this.dbCategories = JSON.parse(storedCategories);
@@ -138,9 +160,10 @@ export class StudentCatalog implements OnInit {
         { idCategory: 3, name: 'Física' },
         { idCategory: 4, name: 'Literatura' }
       ];
-      localStorage.setItem('categories', JSON.stringify(this.dbCategories));
     }
+  }
 
+  private loadAuthorsLocal(): void {
     const storedAuthors = localStorage.getItem('authors');
     if (storedAuthors) {
       this.dbAuthors = JSON.parse(storedAuthors);
@@ -152,7 +175,6 @@ export class StudentCatalog implements OnInit {
         { idAuthor: 4, firstName: 'Roger', surName: 'Pressman' },
         { idAuthor: 5, firstName: 'Gilbert', surName: 'Strang' }
       ];
-      localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
     }
   }
 

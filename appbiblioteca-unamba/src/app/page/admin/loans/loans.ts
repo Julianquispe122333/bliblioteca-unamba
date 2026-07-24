@@ -111,6 +111,21 @@ export class LoanManagement implements OnInit {
   }
 
   loadData(): void {
+    this.apiService.getBooks().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.books = res.data;
+        } else {
+          const stored = localStorage.getItem('books');
+          if (stored) this.books = JSON.parse(stored);
+        }
+      },
+      error: () => {
+        const stored = localStorage.getItem('books');
+        if (stored) this.books = JSON.parse(stored);
+      }
+    });
+
     this.apiService.getReservations().subscribe({
       next: (res) => {
         if (res && res.data) {
