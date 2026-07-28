@@ -7,6 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../service/api.service';
 
 interface Reservation {
@@ -65,32 +67,36 @@ export class StudentReservations implements OnInit {
 
   loadReservations(): void {
     const studentToFind = this.studentName || 'Estudiante UNAMBA';
-    this.apiService.getStudentReservations(studentToFind).subscribe({
-      next: (res) => {
-        if (res && res.data && res.data.length > 0) {
-          // BUG-07 FIX: Filtrar solo las reservas del estudiante logueado
-          this.reservations = res.data.filter(
-            (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
-          );
-          this.syncLoans();
-        } else {
-          this.apiService.getReservations().subscribe({
-            next: (allRes) => {
-              if (allRes && allRes.data && allRes.data.length > 0) {
-                // BUG-07 FIX: Filtrar por nombre del estudiante logueado
-                this.reservations = allRes.data.filter(
-                  (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
-                );
-              } else {
-                this.loadReservationsLocal();
-              }
-              this.syncLoans();
-            },
-            error: () => this.loadReservationsLocal()
+    forkJoin({
+      reservations: this.apiService.getStudentReservations(studentToFind).pipe(catchError(() => of(null))),
+      loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
+    }).subscribe(({ reservations, loans }) => {
+      // Cargar préstamos
+      if (loans?.data) {
+        this.activeLoans = loans.data;
+      } else {
+        const storedLoans = localStorage.getItem('loans');
+        if (storedLoans) this.activeLoans = JSON.parse(storedLoans);
+      }
+      // Cargar reservas del estudiante
+      if (reservations?.data && reservations.data.length > 0) {
+        this.reservations = reservations.data.filter(
+          (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
+        );
+        if (this.reservations.length === 0) {
+          // Puede que el endpoint /student/ no filtre bien, usar el general
+          this.apiService.getReservations().pipe(catchError(() => of(null))).subscribe(allRes => {
+            if (allRes?.data) {
+              this.reservations = allRes.data.filter(
+                (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
+              );
+            }
+            if (this.reservations.length === 0) this.loadReservationsLocal();
           });
         }
-      },
-      error: () => this.loadReservationsLocal()
+      } else {
+        this.loadReservationsLocal();
+      }
     });
   }
 

@@ -14,6 +14,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AdminAuthors } from '../authors/authors';
 import { AdminCategories } from '../categories/categories';
 import { ApiService } from '../../../service/api.service';
@@ -170,41 +172,30 @@ export class BookCrud implements OnInit {
   }
 
   loadData(): void {
-    this.apiService.getCategories().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbCategories = res.data;
-          localStorage.setItem('categories', JSON.stringify(this.dbCategories));
-        } else {
-          this.loadCategoriesLocal();
-        }
-      },
-      error: () => this.loadCategoriesLocal()
-    });
-
-    this.apiService.getAuthors().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbAuthors = res.data;
-          this.dbAuthors.forEach(a => a.fullName = `${a.firstName} ${a.surName}`);
-          localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
-        } else {
-          this.loadAuthorsLocal();
-        }
-      },
-      error: () => this.loadAuthorsLocal()
-    });
-
-    this.apiService.getBooks().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.books = res.data;
-          this.processBooks();
-        } else {
-          this.loadBooksLocal();
-        }
-      },
-      error: () => this.loadBooksLocal()
+    forkJoin({
+      categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
+      authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
+      books: this.apiService.getBooks().pipe(catchError(() => of(null)))
+    }).subscribe(({ categories, authors, books }) => {
+      if (categories?.data) {
+        this.dbCategories = categories.data;
+        localStorage.setItem('categories', JSON.stringify(this.dbCategories));
+      } else {
+        this.loadCategoriesLocal();
+      }
+      if (authors?.data) {
+        this.dbAuthors = authors.data;
+        this.dbAuthors.forEach(a => a.fullName = `${a.firstName} ${a.surName}`);
+        localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
+      } else {
+        this.loadAuthorsLocal();
+      }
+      if (books?.data) {
+        this.books = books.data;
+        this.processBooks();
+      } else {
+        this.loadBooksLocal();
+      }
     });
   }
 

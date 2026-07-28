@@ -10,6 +10,8 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CheckboxModule } from 'primeng/checkbox';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../service/api.service';
 
 interface Book {
@@ -111,41 +113,27 @@ export class LoanManagement implements OnInit {
   }
 
   loadData(): void {
-    this.apiService.getBooks().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.books = res.data;
-        } else {
-          const stored = localStorage.getItem('books');
-          if (stored) this.books = JSON.parse(stored);
-        }
-      },
-      error: () => {
+    forkJoin({
+      books: this.apiService.getBooks().pipe(catchError(() => of(null))),
+      reservations: this.apiService.getReservations().pipe(catchError(() => of(null))),
+      loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
+    }).subscribe(({ books, reservations, loans }) => {
+      if (books?.data) {
+        this.books = books.data;
+      } else {
         const stored = localStorage.getItem('books');
         if (stored) this.books = JSON.parse(stored);
       }
-    });
-
-    this.apiService.getReservations().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.reservations = res.data;
-        } else {
-          this.loadReservationsLocal();
-        }
-      },
-      error: () => this.loadReservationsLocal()
-    });
-
-    this.apiService.getLoans().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.loans = res.data;
-        } else {
-          this.loadLoansLocal();
-        }
-      },
-      error: () => this.loadLoansLocal()
+      if (reservations?.data) {
+        this.reservations = reservations.data;
+      } else {
+        this.loadReservationsLocal();
+      }
+      if (loans?.data) {
+        this.loans = loans.data;
+      } else {
+        this.loadLoansLocal();
+      }
     });
   }
 

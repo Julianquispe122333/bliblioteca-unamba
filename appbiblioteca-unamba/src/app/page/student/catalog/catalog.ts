@@ -11,6 +11,8 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../service/api.service';
 
 interface Category {
@@ -112,40 +114,32 @@ export class StudentCatalog implements OnInit {
   }
 
   loadBooks(): void {
-    this.apiService.getCategories().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbCategories = res.data;
-          localStorage.setItem('categories', JSON.stringify(this.dbCategories));
-        } else {
-          this.loadCategoriesLocal();
-        }
-      },
-      error: () => this.loadCategoriesLocal()
-    });
-
-    this.apiService.getAuthors().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbAuthors = res.data;
-          localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
-        } else {
-          this.loadAuthorsLocal();
-        }
-      },
-      error: () => this.loadAuthorsLocal()
-    });
-
-    this.apiService.getBooks().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.books = res.data;
-          this.processBooks();
-        } else {
-          this.loadBooksLocal();
-        }
-      },
-      error: () => this.loadBooksLocal()
+    forkJoin({
+      categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
+      authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
+      books: this.apiService.getBooks().pipe(catchError(() => of(null)))
+    }).subscribe(({ categories, authors, books }) => {
+      // Cargar categorías
+      if (categories?.data) {
+        this.dbCategories = categories.data;
+        localStorage.setItem('categories', JSON.stringify(this.dbCategories));
+      } else {
+        this.loadCategoriesLocal();
+      }
+      // Cargar autores
+      if (authors?.data) {
+        this.dbAuthors = authors.data;
+        localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
+      } else {
+        this.loadAuthorsLocal();
+      }
+      // Cargar libros y procesar (categorías y autores ya están listos)
+      if (books?.data) {
+        this.books = books.data;
+        this.processBooks();
+      } else {
+        this.loadBooksLocal();
+      }
     });
   }
 

@@ -6,6 +6,8 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../service/api.service';
 
 interface Category {
@@ -72,43 +74,29 @@ export class AdminCatalog implements OnInit {
   }
 
   loadBooks(): void {
-    // 1. Cargar Categorías desde API
-    this.apiService.getCategories().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbCategories = res.data;
-          localStorage.setItem('categories', JSON.stringify(this.dbCategories));
-        } else {
-          this.loadCategoriesLocal();
-        }
-      },
-      error: () => this.loadCategoriesLocal()
-    });
-
-    // 2. Cargar Autores desde API
-    this.apiService.getAuthors().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.dbAuthors = res.data;
-          localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
-        } else {
-          this.loadAuthorsLocal();
-        }
-      },
-      error: () => this.loadAuthorsLocal()
-    });
-
-    // 3. Cargar Libros desde API
-    this.apiService.getBooks().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.books = res.data;
-          this.processBooks();
-        } else {
-          this.loadBooksLocal();
-        }
-      },
-      error: () => this.loadBooksLocal()
+    forkJoin({
+      categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
+      authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
+      books: this.apiService.getBooks().pipe(catchError(() => of(null)))
+    }).subscribe(({ categories, authors, books }) => {
+      if (categories?.data) {
+        this.dbCategories = categories.data;
+        localStorage.setItem('categories', JSON.stringify(this.dbCategories));
+      } else {
+        this.loadCategoriesLocal();
+      }
+      if (authors?.data) {
+        this.dbAuthors = authors.data;
+        localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
+      } else {
+        this.loadAuthorsLocal();
+      }
+      if (books?.data) {
+        this.books = books.data;
+        this.processBooks();
+      } else {
+        this.loadBooksLocal();
+      }
     });
   }
 
