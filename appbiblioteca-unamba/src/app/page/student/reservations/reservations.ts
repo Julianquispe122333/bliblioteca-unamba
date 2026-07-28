@@ -119,7 +119,6 @@ export class StudentReservations implements OnInit {
   }
 
   loadReservationsLocal(): void {
-    // Generar un préstamo vencido de prueba para el Estudiante si no tiene ningún préstamo
     let storedReservations = localStorage.getItem('reservations');
     let storedLoans = localStorage.getItem('loans');
     let reservationsList: Reservation[] = storedReservations ? JSON.parse(storedReservations) : [];
@@ -131,48 +130,6 @@ export class StudentReservations implements OnInit {
       loansList = loansList.filter(l => l.reservationCode !== 'RES-VENCIDO');
       localStorage.setItem('reservations', JSON.stringify(reservationsList));
       localStorage.setItem('loans', JSON.stringify(loansList));
-    }
-
-    const hasOverdue = loansList.some(l => l.studentName === this.studentName && l.status === 'Vencido');
-    if (!hasOverdue && this.studentName === 'Estudiante UNAMBA') {
-      const expiredResCode = 'RES9818';
-      
-      // 1. Agregar reserva de prueba
-      if (!reservationsList.some(r => r.code === expiredResCode)) {
-        reservationsList.push({
-          idReservation: reservationsList.length + 1,
-          code: expiredResCode,
-          studentName: this.studentName,
-          universityCode: 'EST675839',
-          email: 'estudiante.unamba@unamba.edu.pe',
-          bookTitles: ['Física Universitaria'],
-          bookTitle: 'Física Universitaria',
-          status: 'Atendido',
-          expirationDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // ayer
-          createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        });
-        localStorage.setItem('reservations', JSON.stringify(reservationsList));
-      }
-
-      // 2. Agregar préstamo vencido (hace 8 días, límite de entrega fue ayer)
-      if (!loansList.some(l => l.reservationCode === expiredResCode)) {
-        loansList.push({
-          idLoan: loansList.length + 1,
-          reservationCode: expiredResCode,
-          bookTitle: 'Física Universitaria',
-          studentName: this.studentName,
-          loanDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // venció ayer
-          returnDate: null,
-          status: 'Vencido',
-          loanBooks: [{ title: 'Física Universitaria', returned: false }]
-        });
-        localStorage.setItem('loans', JSON.stringify(loansList));
-      }
-      
-      // Recargar variables
-      storedReservations = localStorage.getItem('reservations');
-      storedLoans = localStorage.getItem('loans');
     }
 
     if (storedReservations) {
