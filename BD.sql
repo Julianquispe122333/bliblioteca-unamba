@@ -193,3 +193,13 @@ INSERT INTO tbook (idBook, idCategory, idAuthor, idUser, title, totalCopies, ava
 INSERT INTO tbookfile (idBook, name, extension, createdAt, updatedAt) VALUES
 (1, 'python_intro.pdf', 'pdf', NOW(), NOW()),
 (3, 'fisica_universitaria.pdf', 'pdf', NOW(), NOW());
+
+-- 5. Reservas Iniciales
+INSERT INTO treservation (idReservation, idUser, idBook, code, expirationDate, status, createdAt, updatedAt) VALUES
+(1, 2, 2, 'RES1001', DATE_ADD(NOW(), INTERVAL 1 DAY), 'Pendiente', NOW(), NOW()),
+(2, 3, 5, 'RES1002', DATE_ADD(NOW(), INTERVAL 1 DAY), 'Atendido', NOW(), NOW()),
+(3, 4, 1, 'RES1003', DATE_ADD(NOW(), INTERVAL 1 DAY), 'Pendiente', NOW(), NOW());
+
+-- 6. Préstamos Iniciales
+INSERT INTO tloan (idLoan, idReservation, idUser, loanDate, dueDate, returnDate, status, createdAt, updatedAt) VALUES
+(1, 2, 1, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), NULL, 'Prestado', NOW(), NOW());
