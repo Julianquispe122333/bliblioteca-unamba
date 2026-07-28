@@ -18,9 +18,10 @@
 
         <!-- Correo Institucional -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Institucional</label>
+          <label for="inputCorreo" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Institucional</label>
           <div class="relative">
             <input 
+              id="inputCorreo"
               pInputText 
               type="email"
               [(ngModel)]="correo"
@@ -32,9 +33,10 @@
 
         <!-- Código Universitario -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Código Universitario</label>
+          <label for="inputCodigo" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Código Universitario</label>
           <div class="relative">
             <input 
+              id="inputCodigo"
               pInputText 
               type="text"
               [(ngModel)]="codigo"
@@ -46,8 +48,9 @@
 
         <!-- Role Select Dropdown -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Usuario</label>
+          <label for="selectRol" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Usuario</label>
           <p-select 
+            id="selectRol"
             [options]="roles" 
             [(ngModel)]="selectedRole" 
             optionLabel="name" 
