@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -73,11 +73,14 @@ export class AdminCatalog implements OnInit {
     this.loadBooks();
   }
 
+  private cdr = inject(ChangeDetectorRef);
+
   loadBooks(): void {
     // PASO 1: Mostrar datos de localStorage al instante
     this.loadCategoriesLocal();
     this.loadAuthorsLocal();
     this.loadBooksLocal();
+    this.cdr.detectChanges();
 
     // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
@@ -97,6 +100,7 @@ export class AdminCatalog implements OnInit {
         this.books = books.data;
         this.processBooks();
       }
+      this.cdr.detectChanges();
     });
   }
 

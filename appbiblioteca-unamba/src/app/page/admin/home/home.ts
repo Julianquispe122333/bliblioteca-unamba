@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -60,6 +60,8 @@ export class AdminHome implements OnInit {
     this.calculateStats();
   }
 
+  private cdr = inject(ChangeDetectorRef);
+
   calculateStats(): void {
     // PASO 1: Cargar desde localStorage inmediatamente
     const storedBooks = localStorage.getItem('books');
@@ -78,6 +80,7 @@ export class AdminHome implements OnInit {
       this.pendingReservations = allRes.filter((r: any) => r.status === 'Pendiente');
       this.pendingReservationsCount = this.pendingReservations.length;
     }
+    this.cdr.detectChanges();
 
     // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
@@ -94,6 +97,7 @@ export class AdminHome implements OnInit {
         this.pendingReservations = reservations.data.filter((r: any) => r.status === 'Pendiente');
         this.pendingReservationsCount = this.pendingReservations.length;
       }
+      this.cdr.detectChanges();
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -112,12 +112,15 @@ export class LoanManagement implements OnInit {
     this.loadData();
   }
 
+  private cdr = inject(ChangeDetectorRef);
+
   loadData(): void {
     // PASO 1: Mostrar datos de localStorage al instante
     const storedBooks = localStorage.getItem('books');
     if (storedBooks) this.books = JSON.parse(storedBooks);
     this.loadReservationsLocal();
     this.loadLoansLocal();
+    this.cdr.detectChanges();
 
     // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
@@ -128,6 +131,7 @@ export class LoanManagement implements OnInit {
       if (books?.data) this.books = books.data;
       if (reservations?.data) this.reservations = reservations.data;
       if (loans?.data) this.loans = loans.data;
+      this.cdr.detectChanges();
     });
   }
 

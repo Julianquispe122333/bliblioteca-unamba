@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -65,6 +65,8 @@ export class StudentReservations implements OnInit {
     this.loadReservations();
   }
 
+  private cdr = inject(ChangeDetectorRef);
+
   loadReservations(): void {
     const studentToFind = this.studentName || 'Estudiante UNAMBA';
 
@@ -72,6 +74,7 @@ export class StudentReservations implements OnInit {
     this.loadReservationsLocal();
     const storedLoans = localStorage.getItem('loans');
     if (storedLoans) this.activeLoans = JSON.parse(storedLoans);
+    this.cdr.detectChanges();
 
     // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
@@ -95,10 +98,12 @@ export class StudentReservations implements OnInit {
                 (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
               );
               if (byName.length > 0) this.reservations = byName;
+              this.cdr.detectChanges();
             }
           });
         }
       }
+      this.cdr.detectChanges();
     });
   }
 
