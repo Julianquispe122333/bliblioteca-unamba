@@ -63,19 +63,41 @@ public class BusinessReservation {
             return response;
         }
 
-        String rawName = request.getStudentName() != null && !request.getStudentName().trim().isEmpty() ? request.getStudentName().trim() : "Estudiante UNAMBA";
+        if (request.getStudentName() == null || request.getStudentName().trim().isEmpty()) {
+            response.error();
+            response.listMessage.add("El nombre del estudiante es obligatorio");
+            return response;
+        }
+
+        String rawName = request.getStudentName().trim();
         String[] nameParts = rawName.split(" ");
         String fName = nameParts[0];
         String sName = nameParts.length > 1 ? rawName.substring(fName.length()).trim() : "UNAMBA";
 
-        String email = request.getEmail() != null ? request.getEmail() : rawName.toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
-        Optional<EntityUser> userOpt = repositoryUser.findByEmail(email);
-        EntityUser user;
-        if (userOpt.isPresent()) {
-            user = userOpt.get();
-        } else {
+        // Buscar usuario: primero por email, luego por código universitario, luego por nombre
+        EntityUser user = null;
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            user = repositoryUser.findByEmail(request.getEmail().trim()).orElse(null);
+        }
+        if (user == null && request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()) {
+            user = repositoryUser.findByUniversityCode(request.getUniversityCode().trim()).orElse(null);
+        }
+        if (user == null) {
+            // Buscar por nombre completo (case-insensitive)
+            user = repositoryUser.findAll().stream()
+                .filter(u2 -> (u2.getFirstName() + " " + u2.getSurName()).trim().equalsIgnoreCase(rawName))
+                .findFirst().orElse(null);
+        }
+        if (user == null) {
+            // Crear nuevo usuario estudiante
+            String email = request.getEmail() != null && !request.getEmail().trim().isEmpty()
+                ? request.getEmail().trim()
+                : fName.toLowerCase() + "." + sName.toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
+            String code = request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()
+                ? request.getUniversityCode().trim()
+                : "EST" + (100000 + new Random().nextInt(900000));
             user = new EntityUser();
-            user.setUniversityCode(request.getUniversityCode() != null ? request.getUniversityCode() : "EST" + (100000 + new Random().nextInt(900000)));
+            user.setUniversityCode(code);
             user.setFirstName(fName);
             user.setSurName(sName);
             user.setEmail(email);

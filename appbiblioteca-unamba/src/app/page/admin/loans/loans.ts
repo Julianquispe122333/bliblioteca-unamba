@@ -250,6 +250,11 @@ export class LoanManagement implements OnInit {
 
     this.apiService.createLoanFromReservation(code).subscribe({
       next: (res) => {
+        if (res && res.type === 'error') {
+          const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al registrar el préstamo';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          return;
+        }
         this.messageService.add({ 
           severity: 'success', 
           summary: 'Préstamo Registrado', 
@@ -260,8 +265,15 @@ export class LoanManagement implements OnInit {
         this.foundReservation = null;
         this.loadData();
       },
-      error: () => {
-        this.registerLoanFromReservationLocal();
+      error: (err) => {
+        // Solo guardar localmente si es error de red (status 0) o no hay conexión
+        const isNetworkError = !err.status || err.status === 0;
+        if (isNetworkError) {
+          this.registerLoanFromReservationLocal();
+        } else {
+          const msg = err.error?.listMessage?.[0] || 'No se pudo registrar el préstamo';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        }
       }
     });
   }
@@ -330,14 +342,25 @@ export class LoanManagement implements OnInit {
 
     this.apiService.returnLoanBooks(resCode, this.booksReturningNow).subscribe({
       next: (res) => {
+        if (res && res.type === 'error') {
+          const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al registrar la devolución';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          return;
+        }
         this.messageService.add({ severity: 'success', summary: 'Devuelto', detail: 'Devolución registrada correctamente en la BD.' });
         this.displayReturnDialog = false;
         this.searchReturnCode = '';
         this.foundLoan = null;
         this.loadData();
       },
-      error: () => {
-        this.confirmReturnBookLocal();
+      error: (err) => {
+        const isNetworkError = !err.status || err.status === 0;
+        if (isNetworkError) {
+          this.confirmReturnBookLocal();
+        } else {
+          const msg = err.error?.listMessage?.[0] || 'No se pudo registrar la devolución';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        }
       }
     });
   }

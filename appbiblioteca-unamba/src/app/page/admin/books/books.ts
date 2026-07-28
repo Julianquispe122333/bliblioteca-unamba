@@ -381,7 +381,12 @@ export class BookCrud implements OnInit {
     };
 
     this.apiService.saveBook(payload).subscribe({
-      next: () => {
+      next: (res) => {
+        if (res && res.type === 'error') {
+          const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al guardar el libro';
+          this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: msg });
+          return;
+        }
         this.loadData();
         this.messageService.add({
           severity: 'success',
@@ -391,8 +396,14 @@ export class BookCrud implements OnInit {
         this.bookDialog = false;
         this.displayConfirmBook = false;
       },
-      error: () => {
-        this.confirmSaveBookLocal(bookData);
+      error: (err) => {
+        const isNetworkError = !err.status || err.status === 0;
+        if (isNetworkError) {
+          this.confirmSaveBookLocal(bookData);
+        } else {
+          const msg = err.error?.listMessage?.[0] || 'No se pudo guardar el libro';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        }
       }
     });
   }

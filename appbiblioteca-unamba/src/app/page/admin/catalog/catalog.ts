@@ -168,8 +168,8 @@ export class AdminCatalog implements OnInit {
 
   get filteredBooks(): Book[] {
     return this.books.filter(book => {
-      const matchesSearch = book.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            book.authorName.toLowerCase().includes(this.searchQuery.toLowerCase());
+      const matchesSearch = (book.title || '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                            (book.authorName || '').toLowerCase().includes(this.searchQuery.toLowerCase());
       const matchesCategory = this.selectedCategoryId === 0 || book.idCategory === this.selectedCategoryId;
       return matchesSearch && matchesCategory;
     });

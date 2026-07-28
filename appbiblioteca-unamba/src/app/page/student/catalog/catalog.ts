@@ -255,8 +255,12 @@ export class StudentCatalog implements OnInit {
 
   confirmReservation(): void {
     const titles = this.selectedBooks.map(b => b.title);
+    const userStr = localStorage.getItem('currentUser');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
     this.apiService.createReservation({
       studentName: this.studentName,
+      email: currentUser?.correo || undefined,
+      universityCode: currentUser?.codigo || undefined,
       bookTitles: titles
     }).subscribe({
       next: (res) => {

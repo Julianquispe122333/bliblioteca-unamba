@@ -49,7 +49,20 @@ public class BusinessBook {
 
     public ResponseDataGeneric<ResponseBook> save(RequestBookSave request) {
         ResponseDataGeneric<ResponseBook> response = new ResponseDataGeneric<>();
-        
+
+        // Validar copias
+        if (request.getAvailableCopies() != null && request.getTotalCopies() != null
+                && request.getAvailableCopies() > request.getTotalCopies()) {
+            response.error();
+            response.listMessage.add("Las copias disponibles no pueden superar las copias totales");
+            return response;
+        }
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            response.error();
+            response.listMessage.add("El título del libro es obligatorio");
+            return response;
+        }
+
         // 1. Resolver Categoría
         Integer categoryId = request.getIdCategory();
         if (categoryId == null && request.getCategoryName() != null && !request.getCategoryName().trim().isEmpty()) {
