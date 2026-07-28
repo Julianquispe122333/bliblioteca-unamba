@@ -158,7 +158,7 @@ export class BookCrud implements OnInit {
       hasPdf: [false],
       pdfFileName: [''],
       pdfUrl: [''],
-      image: ['https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80']
+      image: ['', Validators.required]
     }, { validators: this.copiesValidator });
   }
 
@@ -277,7 +277,7 @@ export class BookCrud implements OnInit {
       hasPdf: false,
       pdfFileName: '',
       pdfUrl: '',
-      image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80'
+      image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80'
     });
     this.bookDialog = true;
   }
