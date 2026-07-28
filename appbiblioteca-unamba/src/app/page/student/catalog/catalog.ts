@@ -114,31 +114,28 @@ export class StudentCatalog implements OnInit {
   }
 
   loadBooks(): void {
+    // PASO 1: Cargar inmediatamente desde localStorage para que el usuario vea datos al instante
+    this.loadCategoriesLocal();
+    this.loadAuthorsLocal();
+    this.loadBooksLocal();
+
+    // PASO 2: Actualizar desde la API en segundo plano
     forkJoin({
       categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
       authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
       books: this.apiService.getBooks().pipe(catchError(() => of(null)))
     }).subscribe(({ categories, authors, books }) => {
-      // Cargar categorías
       if (categories?.data) {
         this.dbCategories = categories.data;
         localStorage.setItem('categories', JSON.stringify(this.dbCategories));
-      } else {
-        this.loadCategoriesLocal();
       }
-      // Cargar autores
       if (authors?.data) {
         this.dbAuthors = authors.data;
         localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
-      } else {
-        this.loadAuthorsLocal();
       }
-      // Cargar libros y procesar (categorías y autores ya están listos)
       if (books?.data) {
         this.books = books.data;
         this.processBooks();
-      } else {
-        this.loadBooksLocal();
       }
     });
   }

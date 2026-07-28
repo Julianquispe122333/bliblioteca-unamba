@@ -172,6 +172,12 @@ export class BookCrud implements OnInit {
   }
 
   loadData(): void {
+    // PASO 1: Mostrar datos de localStorage al instante
+    this.loadCategoriesLocal();
+    this.loadAuthorsLocal();
+    this.loadBooksLocal();
+
+    // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
       categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
       authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
@@ -180,21 +186,15 @@ export class BookCrud implements OnInit {
       if (categories?.data) {
         this.dbCategories = categories.data;
         localStorage.setItem('categories', JSON.stringify(this.dbCategories));
-      } else {
-        this.loadCategoriesLocal();
       }
       if (authors?.data) {
         this.dbAuthors = authors.data;
         this.dbAuthors.forEach(a => a.fullName = `${a.firstName} ${a.surName}`);
         localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
-      } else {
-        this.loadAuthorsLocal();
       }
       if (books?.data) {
         this.books = books.data;
         this.processBooks();
-      } else {
-        this.loadBooksLocal();
       }
     });
   }

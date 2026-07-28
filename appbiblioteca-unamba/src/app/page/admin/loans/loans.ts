@@ -113,27 +113,21 @@ export class LoanManagement implements OnInit {
   }
 
   loadData(): void {
+    // PASO 1: Mostrar datos de localStorage al instante
+    const storedBooks = localStorage.getItem('books');
+    if (storedBooks) this.books = JSON.parse(storedBooks);
+    this.loadReservationsLocal();
+    this.loadLoansLocal();
+
+    // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
       books: this.apiService.getBooks().pipe(catchError(() => of(null))),
       reservations: this.apiService.getReservations().pipe(catchError(() => of(null))),
       loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
     }).subscribe(({ books, reservations, loans }) => {
-      if (books?.data) {
-        this.books = books.data;
-      } else {
-        const stored = localStorage.getItem('books');
-        if (stored) this.books = JSON.parse(stored);
-      }
-      if (reservations?.data) {
-        this.reservations = reservations.data;
-      } else {
-        this.loadReservationsLocal();
-      }
-      if (loans?.data) {
-        this.loans = loans.data;
-      } else {
-        this.loadLoansLocal();
-      }
+      if (books?.data) this.books = books.data;
+      if (reservations?.data) this.reservations = reservations.data;
+      if (loans?.data) this.loans = loans.data;
     });
   }
 

@@ -67,35 +67,37 @@ export class StudentReservations implements OnInit {
 
   loadReservations(): void {
     const studentToFind = this.studentName || 'Estudiante UNAMBA';
+
+    // PASO 1: Mostrar datos de localStorage al instante
+    this.loadReservationsLocal();
+    const storedLoans = localStorage.getItem('loans');
+    if (storedLoans) this.activeLoans = JSON.parse(storedLoans);
+
+    // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
       reservations: this.apiService.getStudentReservations(studentToFind).pipe(catchError(() => of(null))),
       loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
     }).subscribe(({ reservations, loans }) => {
-      // Cargar préstamos
       if (loans?.data) {
         this.activeLoans = loans.data;
-      } else {
-        const storedLoans = localStorage.getItem('loans');
-        if (storedLoans) this.activeLoans = JSON.parse(storedLoans);
       }
-      // Cargar reservas del estudiante
       if (reservations?.data && reservations.data.length > 0) {
-        this.reservations = reservations.data.filter(
+        const filtered = reservations.data.filter(
           (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
         );
-        if (this.reservations.length === 0) {
-          // Puede que el endpoint /student/ no filtre bien, usar el general
+        if (filtered.length > 0) {
+          this.reservations = filtered;
+        } else {
+          // El endpoint de estudiante no filtró bien, usar el general
           this.apiService.getReservations().pipe(catchError(() => of(null))).subscribe(allRes => {
             if (allRes?.data) {
-              this.reservations = allRes.data.filter(
+              const byName = allRes.data.filter(
                 (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
               );
+              if (byName.length > 0) this.reservations = byName;
             }
-            if (this.reservations.length === 0) this.loadReservationsLocal();
           });
         }
-      } else {
-        this.loadReservationsLocal();
       }
     });
   }

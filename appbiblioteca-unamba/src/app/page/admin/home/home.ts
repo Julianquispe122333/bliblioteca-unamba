@@ -61,6 +61,25 @@ export class AdminHome implements OnInit {
   }
 
   calculateStats(): void {
+    // PASO 1: Cargar desde localStorage inmediatamente
+    const storedBooks = localStorage.getItem('books');
+    if (storedBooks) this.totalBooks = JSON.parse(storedBooks).length;
+    const storedLoans = localStorage.getItem('loans');
+    if (storedLoans) {
+      const loans = JSON.parse(storedLoans);
+      const today = new Date().toISOString().split('T')[0];
+      loans.forEach((l: any) => { if (l.status === 'Prestado' && l.dueDate < today) l.status = 'Vencido'; });
+      this.activeLoansCount = loans.filter((l: any) => l.status === 'Prestado').length;
+      this.overdueLoansCount = loans.filter((l: any) => l.status === 'Vencido').length;
+    }
+    const storedReservations = localStorage.getItem('reservations');
+    if (storedReservations) {
+      const allRes = JSON.parse(storedReservations);
+      this.pendingReservations = allRes.filter((r: any) => r.status === 'Pendiente');
+      this.pendingReservationsCount = this.pendingReservations.length;
+    }
+
+    // PASO 2: Refrescar desde la API en segundo plano
     forkJoin({
       stats: this.apiService.getAdminStats().pipe(catchError(() => of(null))),
       reservations: this.apiService.getReservations().pipe(catchError(() => of(null)))
@@ -70,29 +89,10 @@ export class AdminHome implements OnInit {
         this.pendingReservationsCount = stats.data.pendingReservationsCount || 0;
         this.activeLoansCount = stats.data.activeLoansCount || 0;
         this.overdueLoansCount = stats.data.overdueLoansCount || 0;
-      } else {
-        // Fallback local
-        const storedBooks = localStorage.getItem('books');
-        if (storedBooks) this.totalBooks = JSON.parse(storedBooks).length;
-        const storedLoans = localStorage.getItem('loans');
-        if (storedLoans) {
-          const loans = JSON.parse(storedLoans);
-          const today = new Date().toISOString().split('T')[0];
-          loans.forEach((l: any) => { if (l.status === 'Prestado' && l.dueDate < today) l.status = 'Vencido'; });
-          this.activeLoansCount = loans.filter((l: any) => l.status === 'Prestado').length;
-          this.overdueLoansCount = loans.filter((l: any) => l.status === 'Vencido').length;
-        }
       }
       if (reservations?.data) {
         this.pendingReservations = reservations.data.filter((r: any) => r.status === 'Pendiente');
         this.pendingReservationsCount = this.pendingReservations.length;
-      } else {
-        const storedReservations = localStorage.getItem('reservations');
-        if (storedReservations) {
-          const allRes = JSON.parse(storedReservations);
-          this.pendingReservations = allRes.filter((r: any) => r.status === 'Pendiente');
-          this.pendingReservationsCount = this.pendingReservations.length;
-        }
       }
     });
   }
