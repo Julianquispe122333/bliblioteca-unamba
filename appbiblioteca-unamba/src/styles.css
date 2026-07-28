@@ -3,6 +3,9 @@
 @import "primeicons/primeicons.css";
 @import "tailwindcss";
 
+/* Tailwind CSS v4 usa las reglas estándar @property (CSS Houdini). 
+   Los errores en W3C Nu HTML Checker son causados por la falta de actualización del parser CSS del validador (desactualizado desde 2021). */
+
 /* ==========================================
    DESIGN SYSTEM — BIBLIOTECA UNAMBA
    ========================================== */
