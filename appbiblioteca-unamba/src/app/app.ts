@@ -44,7 +44,8 @@ export class App implements OnInit {
   }
 
   checkRoute(url: string): void {
-    this.isLoginPage = url.includes('/login') || url === '/';
+    const cleanUrl = url.split('?')[0];
+    this.isLoginPage = cleanUrl.includes('/login') || cleanUrl === '/' || cleanUrl === '';
     
     if (!this.isLoginPage) {
       const userStr = localStorage.getItem('currentUser');
