@@ -103,6 +103,7 @@ export class StudentReservations implements OnInit {
           });
         }
       }
+      this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
   }

@@ -131,6 +131,7 @@ export class LoanManagement implements OnInit {
       if (books?.data) this.books = books.data;
       if (reservations?.data) this.reservations = reservations.data;
       if (loans?.data) this.loans = loans.data;
+      this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
   }

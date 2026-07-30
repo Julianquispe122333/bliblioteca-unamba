@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -135,6 +135,8 @@ export class AdminAuthors implements OnInit {
     this.loadAuthors();
   }
 
+  private cdr = inject(ChangeDetectorRef);
+
   loadAuthors() {
     this.apiService.getAuthors().subscribe({
       next: (res) => {
@@ -142,12 +144,16 @@ export class AdminAuthors implements OnInit {
           this.authors = res.data;
           localStorage.setItem('authors', JSON.stringify(this.authors));
         }
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         const stored = localStorage.getItem('authors');
         if (stored) {
           this.authors = JSON.parse(stored);
         }
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }

@@ -97,6 +97,7 @@ export class AdminHome implements OnInit {
         this.pendingReservations = reservations.data.filter((r: any) => r.status === 'Pendiente');
         this.pendingReservationsCount = this.pendingReservations.length;
       }
+      this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
   }

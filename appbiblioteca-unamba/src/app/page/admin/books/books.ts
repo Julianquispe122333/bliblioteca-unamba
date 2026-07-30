@@ -197,8 +197,9 @@ export class BookCrud implements OnInit {
       }
       if (books?.data) {
         this.books = books.data;
-        this.processBooks();
       }
+      this.processBooks();
+      this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
   }
