@@ -74,35 +74,36 @@ export class StudentReservations implements OnInit {
     this.loadReservationsLocal();
     const storedLoans = localStorage.getItem('loans');
     if (storedLoans) this.activeLoans = JSON.parse(storedLoans);
+    this.cdr.markForCheck();
     this.cdr.detectChanges();
 
-    // PASO 2: Refrescar desde la API en segundo plano
+    // PASO 2: Refrescar desde la API
     forkJoin({
-      reservations: this.apiService.getStudentReservations(studentToFind).pipe(catchError(() => of(null))),
+      studentRes: this.apiService.getStudentReservations(studentToFind).pipe(catchError(() => of(null))),
+      allRes: this.apiService.getReservations().pipe(catchError(() => of(null))),
       loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
-    }).subscribe(({ reservations, loans }) => {
+    }).subscribe(({ studentRes, allRes, loans }) => {
       if (loans?.data) {
         this.activeLoans = loans.data;
       }
-      if (reservations?.data && reservations.data.length > 0) {
-        const filtered = reservations.data.filter(
-          (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
+      
+      let list: Reservation[] = [];
+      if (studentRes?.data && studentRes.data.length > 0) {
+        list = studentRes.data;
+      } else if (allRes?.data && allRes.data.length > 0) {
+        list = allRes.data.filter(
+          (r: any) => !r.studentName || r.studentName.toLowerCase() === studentToFind.toLowerCase() || studentToFind === 'Estudiante UNAMBA'
         );
-        if (filtered.length > 0) {
-          this.reservations = filtered;
-        } else {
-          // El endpoint de estudiante no filtró bien, usar el general
-          this.apiService.getReservations().pipe(catchError(() => of(null))).subscribe(allRes => {
-            if (allRes?.data) {
-              const byName = allRes.data.filter(
-                (r: any) => r.studentName?.toLowerCase() === studentToFind.toLowerCase()
-              );
-              if (byName.length > 0) this.reservations = byName;
-              this.cdr.detectChanges();
-            }
-          });
+        if (list.length === 0) {
+          list = allRes.data;
         }
       }
+
+      if (list.length > 0) {
+        this.reservations = list;
+        localStorage.setItem('reservations', JSON.stringify(this.reservations));
+      }
+
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
