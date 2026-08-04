@@ -6,12 +6,12 @@ describe('Environments', () => {
   it('should define development environment details', () => {
     expect(devEnv).toBeDefined();
     expect(devEnv.production).toBe(false);
-    expect(devEnv.urlBase).toContain('http://localhost:8080');
+    expect(devEnv.urlBase).toContain('bliblioteca-unamba-production-3c76.up.railway.app');
   });
 
   it('should define production environment details', () => {
     expect(prodEnv).toBeDefined();
     expect(prodEnv.production).toBe(true);
-    expect(prodEnv.urlBase).toContain('bliblioteca-unamba-production.up.railway.app');
+    expect(prodEnv.urlBase).toContain('bliblioteca-unamba-production-3c76.up.railway.app');
   });
 });
