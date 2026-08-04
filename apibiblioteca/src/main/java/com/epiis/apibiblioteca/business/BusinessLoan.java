@@ -23,6 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class BusinessLoan {
+    private static final String STATUS_DEVUELTO = "Devuelto";
+    private static final String STATUS_PRESTADO = "Prestado";
+    private static final String STATUS_VENCIDO = "Vencido";
+    private static final String STATUS_ATENDIDO = "Atendido";
+    private static final String MSG_RESERVATION_EXPIRED = "Esta reserva ya expiró y no se puede atender";
+
     private final RepositoryLoan repositoryLoan;
     private final RepositoryReservation repositoryReservation;
     private final RepositoryBook repositoryBook;
@@ -53,42 +59,32 @@ public class BusinessLoan {
         List<EntityReservation> resList = repositoryReservation.findAllByCode(request.getReservationCode().trim().toUpperCase());
         if (resList.isEmpty()) {
             response.error();
-            response.listMessage.add("No existe ninguna reserva con ese código");
+            response.getListMessage().add("No existe ninguna reserva con ese código");
             return response;
         }
 
         EntityReservation res = resList.get(0);
         Date now = new Date();
         if ("Pendiente".equalsIgnoreCase(res.getStatus()) && res.getExpirationDate() != null && res.getExpirationDate().before(now)) {
-            for (EntityReservation r : resList) {
-                r.setStatus("Vencido");
-                r.setUpdatedAt(now);
-                repositoryReservation.save(r);
-                
-                if (r.getBook() != null) {
-                    EntityBook b = r.getBook();
-                    b.setAvailableCopies(b.getAvailableCopies() + 1);
-                    repositoryBook.save(b);
-                }
-            }
+            expireReservations(resList, now);
             response.error();
-            response.listMessage.add("Esta reserva ya expiró y no se puede atender");
+            response.getListMessage().add(MSG_RESERVATION_EXPIRED);
             return response;
         }
 
-        if ("Atendido".equalsIgnoreCase(res.getStatus())) {
+        if (STATUS_ATENDIDO.equalsIgnoreCase(res.getStatus())) {
             response.error();
-            response.listMessage.add("Esta reserva ya fue atendida");
+            response.getListMessage().add("Esta reserva ya fue atendida");
             return response;
         }
-        if ("Vencido".equalsIgnoreCase(res.getStatus())) {
+        if (STATUS_VENCIDO.equalsIgnoreCase(res.getStatus())) {
             response.error();
-            response.listMessage.add("Esta reserva ya expiró y no se puede atender");
+            response.getListMessage().add(MSG_RESERVATION_EXPIRED);
             return response;
         }
 
         for (EntityReservation r : resList) {
-            r.setStatus("Atendido");
+            r.setStatus(STATUS_ATENDIDO);
             r.setUpdatedAt(new Date());
             repositoryReservation.save(r);
         }
@@ -96,14 +92,14 @@ public class BusinessLoan {
         now = new Date();
         Calendar cal = Calendar.getInstance();
         cal.setTime(now);
-        cal.add(Calendar.DAY_OF_MONTH, 7); // Plazo de 7 días
+        cal.add(Calendar.DAY_OF_MONTH, 7);
 
         EntityLoan loan = new EntityLoan();
         loan.setIdReservation(res.getIdReservation());
-        loan.setIdUser(1); // Bibliotecario Principal
+        loan.setIdUser(1);
         loan.setLoanDate(now);
         loan.setDueDate(cal.getTime());
-        loan.setStatus("Prestado");
+        loan.setStatus(STATUS_PRESTADO);
         loan.setCreatedAt(now);
         loan.setUpdatedAt(now);
 
@@ -112,9 +108,23 @@ public class BusinessLoan {
 
         response.setData(convertToResponse(savedLoan));
         response.success();
-        response.listMessage.add("Préstamo registrado exitosamente");
+        response.getListMessage().add("Préstamo registrado exitosamente");
 
         return response;
+    }
+
+    private void expireReservations(List<EntityReservation> resList, Date now) {
+        for (EntityReservation r : resList) {
+            r.setStatus(STATUS_VENCIDO);
+            r.setUpdatedAt(now);
+            repositoryReservation.save(r);
+            
+            if (r.getBook() != null) {
+                EntityBook b = r.getBook();
+                b.setAvailableCopies(b.getAvailableCopies() + 1);
+                repositoryBook.save(b);
+            }
+        }
     }
 
     public ResponseDataGeneric<ResponseLoan> returnBooks(RequestLoanReturn request) {
@@ -123,48 +133,24 @@ public class BusinessLoan {
         List<EntityReservation> resList = repositoryReservation.findAllByCode(request.getReservationCode().trim().toUpperCase());
         if (resList.isEmpty()) {
             response.error();
-            response.listMessage.add("No se encontró ninguna reserva/préstamo con ese código");
+            response.getListMessage().add("No se encontró ninguna reserva/préstamo con ese código");
             return response;
         }
 
         EntityReservation res = resList.get(0);
         Optional<EntityLoan> loanOpt = repositoryLoan.findByIdReservation(res.getIdReservation());
-        if (!loanOpt.isPresent()) {
+        if (loanOpt.isEmpty()) {
             response.error();
-            response.listMessage.add("No se encontró un préstamo activo asociado");
+            response.getListMessage().add("No se encontró un préstamo activo asociado");
             return response;
         }
 
         EntityLoan loan = loanOpt.get();
-        boolean anyUpdated = false;
+        boolean anyUpdated = processReturns(resList, request.getBooksReturningNow());
 
-        for (EntityReservation r : resList) {
-            if (r.getBook() != null && request.getBooksReturningNow().contains(r.getBook().getTitle())) {
-                if (!"Devuelto".equalsIgnoreCase(r.getStatus())) {
-                    r.setStatus("Devuelto");
-                    r.setUpdatedAt(new Date());
-                    repositoryReservation.save(r);
-                    
-                    EntityBook b = r.getBook();
-                    b.setAvailableCopies(b.getAvailableCopies() + 1);
-                    repositoryBook.save(b);
-                    
-                    anyUpdated = true;
-                }
-            }
-        }
-
-        // Verificar si todas las reservas de este código ya han sido devueltas
-        boolean allReturned = true;
-        for (EntityReservation r : resList) {
-            if (!"Devuelto".equalsIgnoreCase(r.getStatus())) {
-                allReturned = false;
-                break;
-            }
-        }
-
+        boolean allReturned = resList.stream().allMatch(r -> STATUS_DEVUELTO.equalsIgnoreCase(r.getStatus()));
         if (allReturned) {
-            loan.setStatus("Devuelto");
+            loan.setStatus(STATUS_DEVUELTO);
             loan.setReturnDate(new Date());
             loan.setUpdatedAt(new Date());
         }
@@ -174,21 +160,40 @@ public class BusinessLoan {
         if (anyUpdated) {
             response.setData(convertToResponse(updatedLoan));
             response.success();
-            response.listMessage.add("Devolución registrada correctamente");
+            response.getListMessage().add("Devolución registrada correctamente");
         } else {
             response.error();
-            response.listMessage.add("No se encontraron libros pendientes de devolución en la selección");
+            response.getListMessage().add("No se encontraron libros pendientes de devolución en la selección");
         }
 
         return response;
+    }
+
+    private boolean processReturns(List<EntityReservation> resList, List<String> returningTitles) {
+        boolean anyUpdated = false;
+        for (EntityReservation r : resList) {
+            if (r.getBook() != null && returningTitles.contains(r.getBook().getTitle()) && !STATUS_DEVUELTO.equalsIgnoreCase(r.getStatus())) {
+                r.setStatus(STATUS_DEVUELTO);
+                r.setUpdatedAt(new Date());
+                repositoryReservation.save(r);
+                
+                EntityBook b = r.getBook();
+                if (b != null && b.getAvailableCopies() < b.getTotalCopies()) {
+                    b.setAvailableCopies(b.getAvailableCopies() + 1);
+                    repositoryBook.save(b);
+                }
+                anyUpdated = true;
+            }
+        }
+        return anyUpdated;
     }
 
     private void checkExpirations() {
         Date today = new Date();
         List<EntityLoan> list = repositoryLoan.findAll();
         for (EntityLoan l : list) {
-            if ("Prestado".equalsIgnoreCase(l.getStatus()) && l.getDueDate() != null && l.getDueDate().before(today)) {
-                l.setStatus("Vencido");
+            if (STATUS_PRESTADO.equalsIgnoreCase(l.getStatus()) && l.getDueDate() != null && l.getDueDate().before(today)) {
+                l.setStatus(STATUS_VENCIDO);
                 l.setUpdatedAt(today);
                 repositoryLoan.save(l);
             }
@@ -200,33 +205,7 @@ public class BusinessLoan {
         dto.setIdLoan(l.getIdLoan());
         
         if (l.getReservation() != null) {
-            String reservationCode = l.getReservation().getCode();
-            dto.setReservationCode(reservationCode);
-            
-            List<EntityReservation> allRes = repositoryReservation.findAllByCode(reservationCode);
-            List<ResponseLoanBook> booksList = new ArrayList<>();
-            StringBuilder titlesBuilder = new StringBuilder();
-            
-            for (EntityReservation r : allRes) {
-                if (r.getBook() != null) {
-                    if (titlesBuilder.length() > 0) {
-                        titlesBuilder.append(", ");
-                    }
-                    titlesBuilder.append(r.getBook().getTitle());
-                    
-                    ResponseLoanBook rlb = new ResponseLoanBook();
-                    rlb.setTitle(r.getBook().getTitle());
-                    rlb.setReturned("Devuelto".equalsIgnoreCase(l.getStatus()));
-                    booksList.add(rlb);
-                }
-            }
-            
-            dto.setBookTitle(titlesBuilder.toString());
-            dto.setLoanBooks(booksList);
-            
-            if (l.getReservation().getUser() != null) {
-                dto.setStudentName(l.getReservation().getUser().getFirstName() + " " + l.getReservation().getUser().getSurName());
-            }
+            populateReservationData(l, dto);
         }
 
         dto.setLoanDate(l.getLoanDate() != null ? l.getLoanDate().toString() : "");
@@ -235,5 +214,35 @@ public class BusinessLoan {
         dto.setStatus(l.getStatus());
 
         return dto;
+    }
+
+    private void populateReservationData(EntityLoan l, ResponseLoan dto) {
+        String reservationCode = l.getReservation().getCode();
+        dto.setReservationCode(reservationCode);
+        
+        List<EntityReservation> allRes = repositoryReservation.findAllByCode(reservationCode);
+        List<ResponseLoanBook> booksList = new ArrayList<>();
+        StringBuilder titlesBuilder = new StringBuilder();
+        
+        for (EntityReservation r : allRes) {
+            if (r.getBook() != null) {
+                if (titlesBuilder.length() > 0) {
+                    titlesBuilder.append(", ");
+                }
+                titlesBuilder.append(r.getBook().getTitle());
+                
+                ResponseLoanBook rlb = new ResponseLoanBook();
+                rlb.setTitle(r.getBook().getTitle());
+                rlb.setReturned(STATUS_DEVUELTO.equalsIgnoreCase(r.getStatus()) || STATUS_DEVUELTO.equalsIgnoreCase(l.getStatus()));
+                booksList.add(rlb);
+            }
+        }
+        
+        dto.setBookTitle(titlesBuilder.toString());
+        dto.setLoanBooks(booksList);
+        
+        if (l.getReservation().getUser() != null) {
+            dto.setStudentName(l.getReservation().getUser().getFirstName() + " " + l.getReservation().getUser().getSurName());
+        }
     }
 }

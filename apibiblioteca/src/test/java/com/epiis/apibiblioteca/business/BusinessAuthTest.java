@@ -68,7 +68,7 @@ public class BusinessAuthTest {
         ResponseLogin res = businessAuth.login(req);
 
         assertEquals("error", res.getType());
-        assertTrue(res.listMessage.contains("Usuario no registrado en la base de datos"));
+        assertTrue(res.getListMessage().contains("Usuario no registrado en la base de datos"));
     }
 
     @Test
@@ -87,7 +87,7 @@ public class BusinessAuthTest {
         ResponseLogin res = businessAuth.login(req);
 
         assertEquals("error", res.getType());
-        assertTrue(res.listMessage.contains("El correo institucional ingresado no coincide con el registrado"));
+        assertTrue(res.getListMessage().contains("El correo institucional ingresado no coincide con el registrado"));
     }
 
     @Test
@@ -105,6 +105,6 @@ public class BusinessAuthTest {
         ResponseLogin res = businessAuth.login(req);
 
         assertEquals("error", res.getType());
-        assertTrue(res.listMessage.contains("El código universitario ingresado es incorrecto"));
+        assertTrue(res.getListMessage().contains("El código universitario ingresado es incorrecto"));
     }
 }

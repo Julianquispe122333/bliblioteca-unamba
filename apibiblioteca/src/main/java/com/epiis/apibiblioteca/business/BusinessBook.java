@@ -19,6 +19,8 @@ import com.epiis.apibiblioteca.repository.RepositoryCategory;
 
 @Service
 public class BusinessBook {
+    private static final String MSG_BOOK_NOT_EXISTS = "El libro no existe";
+
     private final RepositoryBook repositoryBook;
     private final RepositoryCategory repositoryCategory;
     private final RepositoryAuthor repositoryAuthor;
@@ -50,20 +52,67 @@ public class BusinessBook {
     public ResponseDataGeneric<ResponseBook> save(RequestBookSave request) {
         ResponseDataGeneric<ResponseBook> response = new ResponseDataGeneric<>();
 
-        // Validar copias
-        if (request.getAvailableCopies() != null && request.getTotalCopies() != null
-                && request.getAvailableCopies() > request.getTotalCopies()) {
-            response.error();
-            response.listMessage.add("Las copias disponibles no pueden superar las copias totales");
-            return response;
-        }
-        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
-            response.error();
-            response.listMessage.add("El título del libro es obligatorio");
+        if (validateCopiesAndTitle(request, response)) {
             return response;
         }
 
-        // 1. Resolver Categoría
+        Integer categoryId = resolveCategory(request);
+        Integer authorId = resolveAuthor(request);
+
+        EntityBook book;
+        if (request.getIdBook() != null && request.getIdBook() > 0) {
+            Optional<EntityBook> opt = repositoryBook.findById(request.getIdBook());
+            if (opt.isPresent()) {
+                book = opt.get();
+                book.setUpdatedAt(new Date());
+            } else {
+                response.error();
+                response.getListMessage().add(MSG_BOOK_NOT_EXISTS);
+                return response;
+            }
+        } else {
+            book = new EntityBook();
+            book.setIdUser(1);
+            book.setCreatedAt(new Date());
+            book.setUpdatedAt(book.getCreatedAt());
+        }
+
+        book.setIdCategory(categoryId);
+        book.setIdAuthor(authorId);
+        book.setTitle(request.getTitle().trim());
+        book.setTotalCopies(request.getTotalCopies());
+        book.setAvailableCopies(request.getAvailableCopies());
+        book.setDescription(request.getDescription() != null ? request.getDescription().trim() : "");
+        book.setImage(request.getImage() != null ? request.getImage() : "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80");
+
+        EntityBook saved = repositoryBook.save(book);
+        handlePdfFile(request, saved.getIdBook());
+
+        saved = repositoryBook.findById(saved.getIdBook()).orElse(saved);
+
+        response.setData(convertToResponse(saved));
+        response.success();
+        response.getListMessage().add("Libro guardado correctamente");
+
+        return response;
+    }
+
+    private boolean validateCopiesAndTitle(RequestBookSave request, ResponseDataGeneric<ResponseBook> response) {
+        if (request.getAvailableCopies() != null && request.getTotalCopies() != null
+                && request.getAvailableCopies() > request.getTotalCopies()) {
+            response.error();
+            response.getListMessage().add("Las copias disponibles no pueden superar las copias totales");
+            return true;
+        }
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            response.error();
+            response.getListMessage().add("El título del libro es obligatorio");
+            return true;
+        }
+        return false;
+    }
+
+    private Integer resolveCategory(RequestBookSave request) {
         Integer categoryId = request.getIdCategory();
         if (categoryId == null && request.getCategoryName() != null && !request.getCategoryName().trim().isEmpty()) {
             String catName = request.getCategoryName().trim();
@@ -79,11 +128,10 @@ public class BusinessBook {
                 categoryId = newCat.getIdCategory();
             }
         }
-        if (categoryId == null) {
-            categoryId = 1; // Default
-        }
+        return categoryId != null ? categoryId : 1;
+    }
 
-        // 2. Resolver Autor
+    private Integer resolveAuthor(RequestBookSave request) {
         Integer authorId = request.getIdAuthor();
         if (authorId == null && request.getAuthorName() != null && !request.getAuthorName().trim().isEmpty()) {
             String fullName = request.getAuthorName().trim();
@@ -104,44 +152,15 @@ public class BusinessBook {
                 authorId = newAuth.getIdAuthor();
             }
         }
-        if (authorId == null) {
-            authorId = 1; // Default
-        }
+        return authorId != null ? authorId : 1;
+    }
 
-        EntityBook book;
-        if (request.getIdBook() != null && request.getIdBook() > 0) {
-            Optional<EntityBook> opt = repositoryBook.findById(request.getIdBook());
-            if (opt.isPresent()) {
-                book = opt.get();
-                book.setUpdatedAt(new Date());
-            } else {
-                response.error();
-                response.listMessage.add("El libro no existe");
-                return response;
-            }
-        } else {
-            book = new EntityBook();
-            book.setIdUser(1); // Bibliotecario Principal por defecto
-            book.setCreatedAt(new Date());
-            book.setUpdatedAt(book.getCreatedAt());
-        }
-
-        book.setIdCategory(categoryId);
-        book.setIdAuthor(authorId);
-        book.setTitle(request.getTitle().trim());
-        book.setTotalCopies(request.getTotalCopies());
-        book.setAvailableCopies(request.getAvailableCopies());
-        book.setDescription(request.getDescription() != null ? request.getDescription().trim() : "");
-        book.setImage(request.getImage() != null ? request.getImage() : "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80");
-
-        EntityBook saved = repositoryBook.save(book);
-        
-        // Manejar archivo PDF si se habilitó
+    private void handlePdfFile(RequestBookSave request, Integer idBook) {
         if (Boolean.TRUE.equals(request.getHasPdf())) {
-            Optional<EntityBookFile> fileOpt = repositoryBookFile.findByIdBook(saved.getIdBook());
-            if (!fileOpt.isPresent()) {
+            Optional<EntityBookFile> fileOpt = repositoryBookFile.findByIdBook(idBook);
+            if (fileOpt.isEmpty()) {
                 EntityBookFile bf = new EntityBookFile();
-                bf.setIdBook(saved.getIdBook());
+                bf.setIdBook(idBook);
                 bf.setName("document.pdf");
                 bf.setExtension("pdf");
                 bf.setCreatedAt(new Date());
@@ -149,17 +168,9 @@ public class BusinessBook {
                 repositoryBookFile.save(bf);
             }
         } else {
-            Optional<EntityBookFile> fileOpt = repositoryBookFile.findByIdBook(saved.getIdBook());
+            Optional<EntityBookFile> fileOpt = repositoryBookFile.findByIdBook(idBook);
             fileOpt.ifPresent(repositoryBookFile::delete);
         }
-
-        saved = repositoryBook.findById(saved.getIdBook()).orElse(saved);
-
-        response.setData(convertToResponse(saved));
-        response.success();
-        response.listMessage.add("Libro guardado correctamente");
-
-        return response;
     }
 
     public ResponseDataGeneric<Boolean> delete(Integer idBook) {
@@ -168,11 +179,11 @@ public class BusinessBook {
             repositoryBook.deleteById(idBook);
             response.setData(true);
             response.success();
-            response.listMessage.add("Libro eliminado correctamente");
+            response.getListMessage().add("Libro eliminado correctamente");
         } else {
             response.setData(false);
             response.error();
-            response.listMessage.add("El libro no existe");
+            response.getListMessage().add(MSG_BOOK_NOT_EXISTS);
         }
         return response;
     }

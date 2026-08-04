@@ -28,8 +28,8 @@ interface Reservation {
   styleUrls: ['./home.css']
 })
 export class AdminHome implements OnInit {
-  private router = inject(Router);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly apiService = inject(ApiService);
 
   adminName: string = '';
   totalBooks: number = 0;
@@ -60,7 +60,7 @@ export class AdminHome implements OnInit {
     this.calculateStats();
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   calculateStats(): void {
     // PASO 1: Cargar desde localStorage inmediatamente

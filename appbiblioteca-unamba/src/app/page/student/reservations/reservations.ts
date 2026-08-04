@@ -40,9 +40,9 @@ interface Reservation {
   providers: [MessageService]
 })
 export class StudentReservations implements OnInit, OnDestroy {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly apiService = inject(ApiService);
 
   studentName: string = '';
   reservations: Reservation[] = [];
@@ -77,7 +77,7 @@ export class StudentReservations implements OnInit, OnDestroy {
     }
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadReservations(): void {
     const studentToFind = this.studentName || 'Estudiante UNAMBA';
@@ -122,7 +122,7 @@ export class StudentReservations implements OnInit, OnDestroy {
   private syncLoans(): void {
     this.apiService.getLoans().subscribe({
       next: (res) => {
-        if (res && res.data) {
+        if (res?.data) {
           this.activeLoans = res.data;
         }
       },
@@ -146,7 +146,7 @@ export class StudentReservations implements OnInit, OnDestroy {
 
     if (storedReservations) {
       const allReservations: Reservation[] = JSON.parse(storedReservations);
-      const nowTime = new Date().getTime();
+      const nowTime = Date.now();
       let modified = false;
       const storedBooks = localStorage.getItem('books');
       let booksList: any[] = storedBooks ? JSON.parse(storedBooks) : [];
@@ -172,7 +172,7 @@ export class StudentReservations implements OnInit, OnDestroy {
         localStorage.setItem('reservations', JSON.stringify(allReservations));
         localStorage.setItem('books', JSON.stringify(booksList));
         // Disparar evento para actualizar catálogo en el frontend si es necesario
-        window.dispatchEvent(new Event('storage'));
+        globalThis.dispatchEvent(new Event('storage'));
       }
 
       this.reservations = allReservations

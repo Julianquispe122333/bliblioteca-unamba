@@ -74,11 +74,11 @@ interface Book {
   providers: [MessageService, ConfirmationService]
 })
 export class BookCrud implements OnInit {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
-  private fb = inject(FormBuilder);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly fb = inject(FormBuilder);
+  private readonly apiService = inject(ApiService);
 
   books: Book[] = [];
   dbCategories: Category[] = [];
@@ -185,7 +185,7 @@ export class BookCrud implements OnInit {
     return !!(control && control.invalid && (control.dirty || control.touched));
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadData(): void {
     // PASO 1: Mostrar datos de localStorage al instante
@@ -395,7 +395,7 @@ export class BookCrud implements OnInit {
 
     this.apiService.saveBook(payload).subscribe({
       next: (res) => {
-        if (res && res.type === 'error') {
+        if (res?.type === 'error') {
           const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al guardar el libro';
           this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: msg });
           return;

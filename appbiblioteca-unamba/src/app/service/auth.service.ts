@@ -17,15 +17,15 @@ export interface SessionUser {
  * - Guarda el token y datos del usuario en sessionStorage.
  * - Inicia un timer de 60s en el cliente: si el usuario no hace requests,
  *   igual se expulsa cuando el token expira (doble protección).
- * - clearSession() limpia TODO y redirige a /login.
+ * - clearSession() limpia la sesion y redirige a /login.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private ngZone = inject(NgZone);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly ngZone = inject(NgZone);
 
   private readonly TOKEN_KEY = 'jwt_token';
   private readonly USER_KEY = 'currentUser';
@@ -83,7 +83,7 @@ export class AuthService {
 
   /**
    * Llamado por el timer o por el interceptor cuando recibe 401.
-   * Limpia TODO y redirige a /login con notificación.
+   * Limpia el estado y redirige a /login con notificación.
    */
   expireSession(): void {
     this.clearSession();
@@ -106,7 +106,7 @@ export class AuthService {
   }
 
   // ─────────────────────────────────────────────
-  // Limpiar todo el estado de sesión
+  // Limpiar el estado completo de sesión
   // ─────────────────────────────────────────────
 
   clearSession(): void {

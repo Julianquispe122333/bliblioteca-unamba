@@ -66,7 +66,7 @@
         [ngClass]="isInCart(book) ? 'ring-2 ring-indigo-500 shadow-[0_8px_30px_rgb(99,102,241,0.2)] scale-[1.01]' : 'border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 hover:border-slate-300/80'">
         
         <!-- Beautiful Book Cover -->
-        <div class="h-56 bg-slate-100 relative overflow-hidden flex items-center justify-center cursor-pointer group-hover:bg-slate-200 transition-colors" (click)="viewBookDetail(book)">
+        <div class="h-56 bg-slate-100 relative overflow-hidden flex items-center justify-center cursor-pointer group-hover:bg-slate-200 transition-colors" (click)="viewBookDetail(book)" (keydown.enter)="viewBookDetail(book)">
           <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
           <img [src]="book.image" [alt]="book.title" class="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700 ease-out" />
           
@@ -101,7 +101,7 @@
 
         <!-- Premium Content Area -->
         <div class="p-6 flex-1 flex flex-col justify-between gap-4 bg-white relative z-20">
-          <div class="cursor-pointer group/title" (click)="viewBookDetail(book)">
+          <div class="cursor-pointer group/title" (click)="viewBookDetail(book)" (keydown.enter)="viewBookDetail(book)">
             <h3 class="font-extrabold text-slate-800 text-base leading-snug line-clamp-2 group-hover/title:text-indigo-600 transition-colors" [title]="book.title">
               {{ book.title }}
             </h3>
@@ -190,11 +190,12 @@
     </div>
 
     <div class="flex justify-end gap-3 border-t border-slate-100 pt-5 mt-2">
-      <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayCartDialog = false" styleClass="font-bold rounded-xl px-5" />
+      <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayCartDialog = false" (keydown.enter)="displayCartDialog = false" styleClass="font-bold rounded-xl px-5" />
       <p-button 
         label="Generar Código" 
         icon="pi pi-check-circle" 
         (click)="confirmReservation()" 
+        (keydown.enter)="confirmReservation()"
         styleClass="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-none rounded-xl px-6 py-2.5 shadow-lg shadow-indigo-500/30 transition-all font-bold" />
     </div>
   </div>
@@ -255,12 +256,12 @@
           </div>
         </div>
         @if (selectedBook.hasPdf) {
-          <p-button label="Vista Previa" icon="pi pi-eye" [outlined]="true" severity="info" size="small" (click)="openPdfView()" styleClass="rounded-xl font-bold bg-white" />
+          <p-button label="Vista Previa" icon="pi pi-eye" [outlined]="true" severity="info" size="small" (click)="openPdfView()" (keydown.enter)="openPdfView()" styleClass="rounded-xl font-bold bg-white" />
         }
       </div>
 
       <div class="flex justify-end gap-3 border-t border-slate-100 pt-5 mt-2">
-        <p-button label="Cerrar" [text]="true" severity="secondary" (click)="displayDetailDialog = false" styleClass="font-bold rounded-xl px-5" />
+        <p-button label="Cerrar" [text]="true" severity="secondary" (click)="displayDetailDialog = false" (keydown.enter)="displayDetailDialog = false" styleClass="font-bold rounded-xl px-5" />
         <button 
           (click)="toggleBookSelection(selectedBook)"
           [disabled]="selectedBook.availableCopies <= 0 && !isInCart(selectedBook)"
@@ -296,7 +297,7 @@
         Aquí se mostraría el PDF del libro usando un visor integrado conectado al backend (tbookfile).
       </p>
     </div>
-    <p-button label="Cerrar" (click)="displayPdfDialog = false" severity="secondary" size="small" />
+    <p-button label="Cerrar" (click)="displayPdfDialog = false" (keydown.enter)="displayPdfDialog = false" severity="secondary" size="small" />
   </div>
 </p-dialog>
 
@@ -326,12 +327,12 @@
       <span class="text-xs font-bold text-indigo-900 tracking-wider">CÓDIGO DE RETIRO</span>
       <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-200 w-full justify-center">
         <span class="font-mono font-extrabold text-indigo-700 text-2xl tracking-widest select-all">{{ lastReservationCode }}</span>
-        <p-button icon="pi pi-copy" [rounded]="true" [text]="true" severity="info" (click)="copyCode(lastReservationCode)" pTooltip="Copiar código" />
+        <p-button icon="pi pi-copy" [rounded]="true" [text]="true" severity="info" (click)="copyCode(lastReservationCode)" (keydown.enter)="copyCode(lastReservationCode)" pTooltip="Copiar código" />
       </div>
     </div>
     
     <div class="flex justify-center mt-4">
-      <p-button label="Entendido" (click)="displaySuccessDialog = false" styleClass="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8" />
+      <p-button label="Entendido" (click)="displaySuccessDialog = false" (keydown.enter)="displaySuccessDialog = false" styleClass="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-8" />
     </div>
   </div>
 </p-dialog>

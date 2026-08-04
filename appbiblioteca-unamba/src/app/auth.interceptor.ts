@@ -34,7 +34,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     tap(event => {
       if (event instanceof HttpResponse) {
         const newAuthHeader = event.headers.get('Authorization');
-        if (newAuthHeader && newAuthHeader.startsWith('Bearer ')) {
+        if (newAuthHeader?.startsWith('Bearer ')) {
           const newToken = newAuthHeader.substring(7);
           const currentUser = authService.getCurrentUser();
           if (currentUser) {

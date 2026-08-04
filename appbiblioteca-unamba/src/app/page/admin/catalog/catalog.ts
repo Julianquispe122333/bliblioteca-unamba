@@ -44,8 +44,8 @@ interface Book {
   styleUrls: ['./catalog.css']
 })
 export class AdminCatalog implements OnInit {
-  private router = inject(Router);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly apiService = inject(ApiService);
 
   dbCategories: Category[] = [];
   dbAuthors: any[] = [];
@@ -73,41 +73,41 @@ export class AdminCatalog implements OnInit {
     this.loadBooks();
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadBooks(): void {
-    // PASO 1: Mostrar datos de localStorage al instante
-    this.loadCategoriesLocal();
-    this.loadAuthorsLocal();
-    this.loadBooksLocal();
+    // Cargar datos de manera reactiva desde almacenamiento local primero
+    this.retrieveLocalCategories();
+    this.retrieveLocalAuthors();
+    this.retrieveLocalBooks();
     this.cdr.detectChanges();
 
-    // PASO 2: Refrescar desde la API en segundo plano
+    // Actualizar datos del backend en segundo plano
     forkJoin({
-      categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
-      authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
-      books: this.apiService.getBooks().pipe(catchError(() => of(null)))
-    }).subscribe(({ categories, authors, books }) => {
-      if (categories?.data) {
-        this.dbCategories = categories.data;
+      catList: this.apiService.getCategories().pipe(catchError(() => of(null))),
+      authList: this.apiService.getAuthors().pipe(catchError(() => of(null))),
+      bookList: this.apiService.getBooks().pipe(catchError(() => of(null)))
+    }).subscribe(({ catList, authList, bookList }) => {
+      if (catList?.data) {
+        this.dbCategories = catList.data;
         localStorage.setItem('categories', JSON.stringify(this.dbCategories));
       }
-      if (authors?.data) {
-        this.dbAuthors = authors.data;
+      if (authList?.data) {
+        this.dbAuthors = authList.data;
         localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
       }
-      if (books?.data) {
-        this.books = books.data;
-        this.processBooks();
+      if (bookList?.data) {
+        this.books = bookList.data;
+        this.formatBooksInfo();
       }
       this.cdr.detectChanges();
     });
   }
 
-  private loadCategoriesLocal(): void {
-    const storedCategories = localStorage.getItem('categories');
-    if (storedCategories) {
-      this.dbCategories = JSON.parse(storedCategories);
+  private retrieveLocalCategories(): void {
+    const rawCategories = localStorage.getItem('categories');
+    if (rawCategories) {
+      this.dbCategories = JSON.parse(rawCategories);
     } else {
       this.dbCategories = [
         { idCategory: 1, name: 'Sistemas' },
@@ -118,10 +118,10 @@ export class AdminCatalog implements OnInit {
     }
   }
 
-  private loadAuthorsLocal(): void {
-    const storedAuthors = localStorage.getItem('authors');
-    if (storedAuthors) {
-      this.dbAuthors = JSON.parse(storedAuthors);
+  private retrieveLocalAuthors(): void {
+    const rawAuthors = localStorage.getItem('authors');
+    if (rawAuthors) {
+      this.dbAuthors = JSON.parse(rawAuthors);
     } else {
       this.dbAuthors = [
         { idAuthor: 1, firstName: 'John', surName: 'Smith' },
@@ -133,42 +133,42 @@ export class AdminCatalog implements OnInit {
     }
   }
 
-  private loadBooksLocal(): void {
-    const storedBooks = localStorage.getItem('books');
-    if (storedBooks) {
-      this.books = JSON.parse(storedBooks);
+  private retrieveLocalBooks(): void {
+    const rawBooks = localStorage.getItem('books');
+    if (rawBooks) {
+      this.books = JSON.parse(rawBooks);
     }
-    this.processBooks();
+    this.formatBooksInfo();
   }
 
-  private processBooks(): void {
-    this.books.forEach(book => {
-      if (!book.idCategory && book.categoryName) {
-        const matchedCat = this.dbCategories.find(c => c.name === book.categoryName);
-        if (matchedCat) book.idCategory = matchedCat.idCategory;
+  private formatBooksInfo(): void {
+    this.books.forEach(b => {
+      if (!b.idCategory && b.categoryName) {
+        const found = this.dbCategories.find(c => c.name === b.categoryName);
+        if (found) b.idCategory = found.idCategory;
       }
-      const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
-      book.categoryName = cat ? cat.name : (book.categoryName || 'Sin Categoría');
+      const category = this.dbCategories.find(c => c.idCategory === b.idCategory);
+      b.categoryName = category ? category.name : (b.categoryName || 'Sin Categoría');
 
-      if (!book.authorName && book.idAuthor) {
-        const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
-        book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
+      if (!b.authorName && b.idAuthor) {
+        const author = this.dbAuthors.find(a => a.idAuthor === b.idAuthor);
+        b.authorName = author ? `${author.firstName} ${author.surName}` : 'Desconocido';
       }
     });
     localStorage.setItem('books', JSON.stringify(this.books));
   }
 
   get filteredBooks(): Book[] {
-    return this.books.filter(book => {
-      const matchesSearch = (book.title || '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            (book.authorName || '').toLowerCase().includes(this.searchQuery.toLowerCase());
-      const matchesCategory = this.selectedCategoryId === 0 || book.idCategory === this.selectedCategoryId;
-      return matchesSearch && matchesCategory;
+    return this.books.filter(b => {
+      const matchText = (b.title || '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                        (b.authorName || '').toLowerCase().includes(this.searchQuery.toLowerCase());
+      const matchCat = this.selectedCategoryId === 0 || b.idCategory === this.selectedCategoryId;
+      return matchText && matchCat;
     });
   }
 
-  viewBookDetail(book: Book): void {
-    this.selectedBook = book;
+  viewBookDetail(b: Book): void {
+    this.selectedBook = b;
     this.displayDetailDialog = true;
   }
 

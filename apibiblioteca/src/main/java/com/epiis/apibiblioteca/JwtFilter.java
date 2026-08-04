@@ -23,6 +23,9 @@ import java.util.Map;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String PREFIX_BEARER = "Bearer ";
+
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
 
@@ -41,7 +44,7 @@ public class JwtFilter extends OncePerRequestFilter {
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         response.setHeader("Access-Control-Allow-Headers", "*");
-        response.setHeader("Access-Control-Expose-Headers", "Authorization");
+        response.setHeader("Access-Control-Expose-Headers", HEADER_AUTHORIZATION);
 
         // Permitir pre-flight CORS sin token
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
@@ -49,15 +52,15 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader(HEADER_AUTHORIZATION);
 
         // Sin header Authorization → token ausente
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null || !authHeader.startsWith(PREFIX_BEARER)) {
             writeUnauthorizedResponse(response, "TOKEN_MISSING", "Se requiere autenticación para acceder a este recurso");
             return;
         }
 
-        String token = authHeader.substring(7); // quitar "Bearer "
+        String token = authHeader.substring(PREFIX_BEARER.length());
 
         if (!jwtService.isTokenValid(token)) {
             // Distinguir si expiró vs si es inválido
@@ -75,7 +78,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String newToken = jwtService.generateToken(email, role);
 
         // Adjuntar el token nuevo a la cabecera de respuesta
-        response.setHeader("Authorization", "Bearer " + newToken);
+        response.setHeader(HEADER_AUTHORIZATION, PREFIX_BEARER + newToken);
 
         // Token válido → continuar con la petición
         filterChain.doFilter(request, response);

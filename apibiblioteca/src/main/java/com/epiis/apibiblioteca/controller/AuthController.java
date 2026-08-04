@@ -25,11 +25,11 @@ public class AuthController {
         if (bindingResult.hasErrors()) {
             ResponseLogin response = new ResponseLogin();
             response.error();
-            bindingResult.getAllErrors().forEach(error -> response.listMessage.add(error.getDefaultMessage()));
+            bindingResult.getAllErrors().forEach(error -> response.getListMessage().add(error.getDefaultMessage()));
             return ResponseEntity.badRequest().body(response);
         }
         ResponseLogin response = businessAuth.login(request);
-        if ("error".equalsIgnoreCase(response.getType())) {
+        if (response.isError()) {
             return ResponseEntity.badRequest().body(response);
         }
         return ResponseEntity.ok(response);

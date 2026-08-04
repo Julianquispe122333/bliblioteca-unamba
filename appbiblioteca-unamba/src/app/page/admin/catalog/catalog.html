@@ -1,6 +1,6 @@
-<div class="flex flex-col gap-8 pb-8">
-  <!-- Search & Category Filters -->
-  <div class="relative bg-white/60 backdrop-blur-xl border border-white/80 p-6 sm:p-8 rounded-[2rem] flex flex-col gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden group">
+<main class="flex flex-col gap-8 pb-8">
+  <!-- Search & Category Filters (Admin) -->
+  <header class="relative bg-white/60 backdrop-blur-xl border border-white/80 p-6 sm:p-8 rounded-[2rem] flex flex-col gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden group">
     <div class="absolute -top-24 -right-24 w-48 h-48 bg-rose-400/10 rounded-full blur-3xl group-hover:bg-rose-400/20 transition-colors duration-700 pointer-events-none"></div>
     <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl group-hover:bg-amber-400/20 transition-colors duration-700 pointer-events-none"></div>
     
@@ -21,8 +21,8 @@
       </div>
     </div>
 
-    <!-- Categories chips (dynamic) -->
-    <div class="flex flex-wrap gap-2.5 pt-2 relative z-10">
+    <!-- Categories chips (dynamic list) -->
+    <nav class="flex flex-wrap gap-2.5 pt-2 relative z-10" aria-label="Filtro de categorías">
       <button 
         (click)="selectedCategoryId = 0"
         [ngClass]="selectedCategoryId === 0 ? 'bg-slate-800 text-white shadow-md' : 'bg-white/80 text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'"
@@ -37,17 +37,17 @@
           {{ cat.name }}
         </button>
       }
-    </div>
-  </div>
+    </nav>
+  </header>
 
-  <!-- Premium Books Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+  <!-- Premium Books Grid (Admin View) -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
     @for (book of filteredBooks; track book.idBook) {
-      <div 
+      <article 
         class="group bg-white rounded-3xl overflow-hidden transition-all duration-500 flex flex-col relative border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 hover:border-slate-300/80">
         
         <!-- Beautiful Book Cover -->
-        <div class="h-56 bg-slate-100 relative overflow-hidden flex items-center justify-center cursor-pointer group-hover:bg-slate-200 transition-colors" (click)="viewBookDetail(book)">
+        <figure class="h-56 bg-slate-100 relative overflow-hidden flex items-center justify-center cursor-pointer group-hover:bg-slate-200 transition-colors m-0" (click)="viewBookDetail(book)" (keydown.enter)="viewBookDetail(book)">
           <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
           <img [src]="book.image" [alt]="book.title" class="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700 ease-out" />
           
@@ -71,16 +71,16 @@
               {{ book.categoryName }}
             </span>
           </div>
-        </div>
+        </figure>
 
         <!-- Premium Content Area -->
-        <div class="p-6 flex-1 flex flex-col gap-2 bg-white relative z-20 cursor-pointer" (click)="viewBookDetail(book)">
+        <div class="p-6 flex-1 flex flex-col gap-2 bg-white relative z-20 cursor-pointer" (click)="viewBookDetail(book)" (keydown.enter)="viewBookDetail(book)">
           <h3 class="font-extrabold text-slate-800 text-base leading-snug line-clamp-2 group-hover:text-rose-600 transition-colors" [title]="book.title">
             {{ book.title }}
           </h3>
           <p class="text-xs font-semibold text-slate-500">{{ book.authorName }}</p>
         </div>
-      </div>
+      </article>
     } @empty {
       <div class="col-span-full py-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-3xl shadow-sm">
         <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -90,14 +90,14 @@
         <p class="text-slate-400 font-medium mt-1">No se encontraron libros en esta categoría.</p>
       </div>
     }
-  </div>
-</div>
+  </section>
+</main>
 
-<!-- Book Detail Dialog -->
+<!-- Book Detail Dialog (Admin View) -->
 <p-dialog
   [(visible)]="displayDetailDialog"
   [style]="{width: '90vw', maxWidth: '550px'}"
-  [header]="'Detalle del Libro'"
+  [header]="'Detalles - Ficha Técnica'"
   [modal]="true"
   [draggable]="false"
   [keepInViewport]="true"
@@ -125,7 +125,7 @@
       </div>
 
       <div>
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción</h4>
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción del Libro</h4>
         <p class="text-sm text-slate-600 leading-relaxed">{{ selectedBook.description }}</p>
       </div>
 
@@ -133,29 +133,29 @@
         <div class="flex items-center gap-3">
           <i class="pi pi-file-pdf text-2xl text-rose-500"></i>
           <div>
-            <h4 class="text-sm font-semibold text-slate-700">Archivo Digital</h4>
+            <h4 class="text-sm font-semibold text-slate-700">Formato PDF</h4>
             <p class="text-xs text-slate-400">
               {{ selectedBook.hasPdf ? 'Documento PDF disponible' : 'Solo formato físico' }}
             </p>
           </div>
         </div>
         @if (selectedBook.hasPdf) {
-          <p-button label="Ver PDF" icon="pi pi-eye" [outlined]="true" severity="info" size="small" (click)="openPdfView()" />
+          <p-button label="Ver PDF" icon="pi pi-eye" [outlined]="true" severity="info" size="small" (click)="openPdfView()" (keydown.enter)="openPdfView()" />
         }
       </div>
 
       <div class="flex justify-end border-t border-slate-100 pt-4">
-        <p-button label="Cerrar" [text]="true" severity="secondary" (click)="displayDetailDialog = false" />
+        <p-button label="Cerrar" [text]="true" severity="secondary" (click)="displayDetailDialog = false" (keydown.enter)="displayDetailDialog = false" />
       </div>
     </div>
   }
 </p-dialog>
 
-<!-- PDF Preview Dialog (Demo) -->
+<!-- PDF Preview Dialog (Admin view demo) -->
 <p-dialog
   [(visible)]="displayPdfDialog"
   [style]="{width: '90vw', maxWidth: '700px', height: 'auto', maxHeight: '90vh'}"
-  [header]="'Visualizador PDF (Demostración)'"
+  [header]="'Visor de Documentos (Demo)'"
   [modal]="true"
   [draggable]="false"
   [keepInViewport]="true"
@@ -168,11 +168,11 @@
       <i class="pi pi-file-pdf text-3xl"></i>
     </div>
     <div>
-      <h3 class="font-bold text-slate-800 text-lg">Vista Previa del PDF</h3>
+      <h3 class="font-bold text-slate-800 text-lg">Visualización de PDF</h3>
       <p class="text-xs text-slate-400 max-w-sm mt-1 mx-auto">
-        Aquí se mostraría el PDF del libro usando un visor integrado conectado al backend (tbookfile).
+        Aquí se conectaría el visualizador oficial para renderizar el documento PDF desde el servidor.
       </p>
     </div>
-    <p-button label="Cerrar" (click)="displayPdfDialog = false" severity="secondary" size="small" />
+    <p-button label="Cerrar" (click)="displayPdfDialog = false" (keydown.enter)="displayPdfDialog = false" severity="secondary" size="small" />
   </div>
 </p-dialog>

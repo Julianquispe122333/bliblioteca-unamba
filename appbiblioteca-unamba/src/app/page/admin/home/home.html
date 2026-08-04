@@ -12,7 +12,7 @@
   <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
     <!-- Libros -->
-    <div (click)="goToBooks()"
+    <div (click)="goToBooks()" (keydown.enter)="goToBooks()"
          class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
          style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
       <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Reservas Pendientes -->
-    <div (click)="goToLoans()"
+    <div (click)="goToLoans()" (keydown.enter)="goToLoans()"
          class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
          style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
       <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Préstamos Activos -->
-    <div (click)="goToLoans()"
+    <div (click)="goToLoans()" (keydown.enter)="goToLoans()"
          class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
          style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
       <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -81,7 +81,7 @@
     </div>
 
     <!-- Préstamos Vencidos -->
-    <div (click)="goToLoans()"
+    <div (click)="goToLoans()" (keydown.enter)="goToLoans()"
          class="card-hover relative p-5 rounded-2xl cursor-pointer overflow-hidden group"
          style="background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
       <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -115,11 +115,11 @@
     <p-table [value]="pendingReservations" styleClass="p-datatable-sm" [rows]="5" [paginator]="true" responsiveLayout="scroll">
       <ng-template #header>
         <tr class="border-b border-slate-200 bg-slate-50">
-          <th class="text-xs font-bold text-slate-500 py-3 pl-3">Código</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Estudiante</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Libro</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Fecha</th>
-          <th class="text-xs font-bold text-slate-500 py-3 pr-3">Estado</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3 pl-3">Código</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Estudiante</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Libro</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Fecha</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3 pr-3">Estado</th>
         </tr>
       </ng-template>
       <ng-template #body let-res>

@@ -24,13 +24,13 @@ public class BusinessAuth {
         String reqCode = request.getCode() != null ? request.getCode().trim() : "";
         // Buscar usuario por correo o codigo universitario
         Optional<EntityUser> optionalUser = repositoryUser.findByEmail(reqEmail);
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             optionalUser = repositoryUser.findByUniversityCode(reqCode);
         }
 
-        if (!optionalUser.isPresent()) {
+        if (optionalUser.isEmpty()) {
             response.error();
-            response.listMessage.add("Usuario no registrado en la base de datos");
+            response.getListMessage().add("Usuario no registrado en la base de datos");
             return response;
         }
 
@@ -39,14 +39,14 @@ public class BusinessAuth {
         // Validar Correo Institucional
         if (!reqEmail.isEmpty() && !user.getEmail().equalsIgnoreCase(reqEmail)) {
             response.error();
-            response.listMessage.add("El correo institucional ingresado no coincide con el registrado");
+            response.getListMessage().add("El correo institucional ingresado no coincide con el registrado");
             return response;
         }
 
         // Validar Código Universitario
         if (!reqCode.isEmpty() && !user.getUniversityCode().equalsIgnoreCase(reqCode)) {
             response.error();
-            response.listMessage.add("El código universitario ingresado es incorrecto");
+            response.getListMessage().add("El código universitario ingresado es incorrecto");
             return response;
         }
 
@@ -71,7 +71,7 @@ public class BusinessAuth {
         response.setToken(token);
 
         response.success();
-        response.listMessage.add("Inicio de sesión exitoso");
+        response.getListMessage().add("Inicio de sesión exitoso");
 
         return response;
     }

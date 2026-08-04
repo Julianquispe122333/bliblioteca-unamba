@@ -70,9 +70,9 @@ interface Loan {
   providers: [MessageService]
 })
 export class LoanManagement implements OnInit {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly apiService = inject(ApiService);
 
   books: Book[] = [];
   reservations: Reservation[] = [];
@@ -112,7 +112,7 @@ export class LoanManagement implements OnInit {
     this.loadData();
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadData(): void {
     // PASO 1: Mostrar datos de localStorage al instante
@@ -246,7 +246,7 @@ export class LoanManagement implements OnInit {
 
     this.apiService.createLoanFromReservation(code).subscribe({
       next: (res) => {
-        if (res && res.type === 'error') {
+        if (res?.type === 'error') {
           const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al registrar el préstamo';
           this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
           return;
@@ -327,7 +327,7 @@ export class LoanManagement implements OnInit {
   }
 
   getPendingBooks(): {title: string, returned: boolean}[] {
-    if (!this.foundLoan || !this.foundLoan.loanBooks) return [];
+    if (!this.foundLoan?.loanBooks) return [];
     return this.foundLoan.loanBooks.filter(lb => !lb.returned);
   }
 
@@ -338,15 +338,12 @@ export class LoanManagement implements OnInit {
 
     this.apiService.returnLoanBooks(resCode, this.booksReturningNow).subscribe({
       next: (res) => {
-        if (res && res.type === 'error') {
+        if (res?.type === 'error') {
           const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al registrar la devolución';
           this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
           return;
         }
-        this.messageService.add({ severity: 'success', summary: 'Devuelto', detail: 'Devolución registrada correctamente en la BD.' });
-        this.displayReturnDialog = false;
-        this.searchReturnCode = '';
-        this.foundLoan = null;
+        this.confirmReturnBookLocal();
         this.loadData();
       },
       error: (err) => {
@@ -401,11 +398,11 @@ export class LoanManagement implements OnInit {
 
   getBookAuthor(title: string): string {
     const book = this.books.find(b => b.title.trim().toLowerCase() === title.trim().toLowerCase());
-    return (book && book.authorName) ? book.authorName : 'Autor no registrado';
+    return book?.authorName ? book.authorName : 'Autor no registrado';
   }
 
   getBookCategory(title: string): string {
     const book = this.books.find(b => b.title.trim().toLowerCase() === title.trim().toLowerCase());
-    return (book && book.categoryName) ? book.categoryName : 'Sin Categoría';
+    return book?.categoryName ? book.categoryName : 'Sin Categoría';
   }
 }

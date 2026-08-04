@@ -5,7 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Service;
 import com.epiis.apibiblioteca.dto.request.RequestReservationCreate;
 import com.epiis.apibiblioteca.dto.response.ResponseReservation;
@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class BusinessReservation {
+    private static final String STATUS_PENDIENTE = "Pendiente";
+    private static final String STATUS_VENCIDO = "Vencido";
+
     private final RepositoryReservation repositoryReservation;
     private final RepositoryBook repositoryBook;
     private final RepositoryUser repositoryUser;
@@ -62,13 +65,13 @@ public class BusinessReservation {
         
         if (request.getBookTitles() == null || request.getBookTitles().isEmpty()) {
             response.error();
-            response.listMessage.add("Debe seleccionar al menos un libro");
+            response.getListMessage().add("Debe seleccionar al menos un libro");
             return response;
         }
 
         if (request.getStudentName() == null || request.getStudentName().trim().isEmpty()) {
             response.error();
-            response.listMessage.add("El nombre del estudiante es obligatorio");
+            response.getListMessage().add("El nombre del estudiante es obligatorio");
             return response;
         }
 
@@ -77,94 +80,15 @@ public class BusinessReservation {
         String fName = nameParts[0];
         String sName = nameParts.length > 1 ? rawName.substring(fName.length()).trim() : "UNAMBA";
 
-        // Buscar usuario: primero por email, luego por código universitario, luego por nombre
-        EntityUser user = null;
-        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
-            user = repositoryUser.findByEmail(request.getEmail().trim()).orElse(null);
-        }
-        if (user == null && request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()) {
-            user = repositoryUser.findByUniversityCode(request.getUniversityCode().trim()).orElse(null);
-        }
-        if (user == null) {
-            // Buscar por nombre completo (case-insensitive)
-            user = repositoryUser.findAll().stream()
-                .filter(u2 -> (u2.getFirstName() + " " + u2.getSurName()).trim().equalsIgnoreCase(rawName))
-                .findFirst().orElse(null);
-        }
-        if (user == null) {
-            // Crear nuevo usuario estudiante
-            String email = request.getEmail() != null && !request.getEmail().trim().isEmpty()
-                ? request.getEmail().trim()
-                : fName.toLowerCase() + "." + sName.toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
-            String code = request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()
-                ? request.getUniversityCode().trim()
-                : "EST" + (100000 + new Random().nextInt(900000));
-            user = new EntityUser();
-            user.setUniversityCode(code);
-            user.setFirstName(fName);
-            user.setSurName(sName);
-            user.setEmail(email);
-            user.setRole("Estudiante");
-            user.setCreatedAt(new Date());
-            user.setUpdatedAt(user.getCreatedAt());
-            user = repositoryUser.save(user);
-        }
-
-        String randomCode;
-        boolean exists = true;
-        do {
-            randomCode = "RES" + (1000 + new Random().nextInt(9000));
-            exists = !repositoryReservation.findAllByCode(randomCode).isEmpty();
-        } while (exists);
-
+        EntityUser user = findOrCreateUser(request, rawName, fName, sName);
+        String randomCode = generateUniqueCode();
         EntityReservation lastSavedRes = null;
 
         for (String title : request.getBookTitles()) {
-            String trimmedTitle = title.trim();
-            Optional<EntityBook> bookOpt = repositoryBook.findByTitle(trimmedTitle);
-            if (!bookOpt.isPresent()) {
-                bookOpt = repositoryBook.findByTitleIgnoreCase(trimmedTitle);
-            }
-            if (!bookOpt.isPresent()) {
-                List<EntityBook> list = repositoryBook.findByTitleContainingIgnoreCase(trimmedTitle);
-                if (!list.isEmpty()) {
-                    bookOpt = Optional.of(list.get(0));
-                }
-            }
-
-            if (!bookOpt.isPresent()) {
-                response.error();
-                response.listMessage.add("No se encontró el libro: " + title);
+            lastSavedRes = processBookReservation(title, user, randomCode, response);
+            if (lastSavedRes == null && response.isError()) {
                 return response;
             }
-
-            EntityBook book = bookOpt.get();
-            if (book.getAvailableCopies() <= 0) {
-                response.error();
-                response.listMessage.add("El libro " + book.getTitle() + " no tiene copias disponibles.");
-                return response;
-            }
-            
-            book.setAvailableCopies(book.getAvailableCopies() - 1);
-            book.setUpdatedAt(new Date());
-            repositoryBook.save(book);
-
-            EntityReservation res = new EntityReservation();
-                res.setIdUser(user.getIdUser());
-                res.setIdBook(book.getIdBook());
-                res.setCode(randomCode);
-                res.setStatus("Pendiente");
-
-                Date now = new Date();
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(now);
-                cal.add(Calendar.MINUTE, 1);
-
-                res.setExpirationDate(cal.getTime());
-                res.setCreatedAt(now);
-                res.setUpdatedAt(now);
-
-                lastSavedRes = repositoryReservation.save(res);
         }
 
         if (lastSavedRes != null) {
@@ -176,9 +100,98 @@ public class BusinessReservation {
         }
 
         response.success();
-        response.listMessage.add("Reserva registrada con éxito con código: " + randomCode);
+        response.getListMessage().add("Reserva registrada con éxito con código: " + randomCode);
 
         return response;
+    }
+
+    private EntityUser findOrCreateUser(RequestReservationCreate request, String rawName, String fName, String sName) {
+        EntityUser user = null;
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            user = repositoryUser.findByEmail(request.getEmail().trim()).orElse(null);
+        }
+        if (user == null && request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()) {
+            user = repositoryUser.findByUniversityCode(request.getUniversityCode().trim()).orElse(null);
+        }
+        if (user == null) {
+            user = repositoryUser.findAll().stream()
+                .filter(u2 -> (u2.getFirstName() + " " + u2.getSurName()).trim().equalsIgnoreCase(rawName))
+                .findFirst().orElse(null);
+        }
+        if (user == null) {
+            String email = request.getEmail() != null && !request.getEmail().trim().isEmpty()
+                ? request.getEmail().trim()
+                : fName.toLowerCase() + "." + sName.toLowerCase().replace(" ", ".") + "@unamba.edu.pe";
+            String code = request.getUniversityCode() != null && !request.getUniversityCode().trim().isEmpty()
+                ? request.getUniversityCode().trim()
+                : "EST" + (100000 + ThreadLocalRandom.current().nextInt(900000));
+            user = new EntityUser();
+            user.setUniversityCode(code);
+            user.setFirstName(fName);
+            user.setSurName(sName);
+            user.setEmail(email);
+            user.setRole("Estudiante");
+            user.setCreatedAt(new Date());
+            user.setUpdatedAt(user.getCreatedAt());
+            user = repositoryUser.save(user);
+        }
+        return user;
+    }
+
+    private String generateUniqueCode() {
+        String randomCode;
+        do {
+            randomCode = "RES" + (1000 + ThreadLocalRandom.current().nextInt(9000));
+        } while (!repositoryReservation.findAllByCode(randomCode).isEmpty());
+        return randomCode;
+    }
+
+    private EntityReservation processBookReservation(String title, EntityUser user, String randomCode, ResponseDataGeneric<ResponseReservation> response) {
+        String trimmedTitle = title.trim();
+        Optional<EntityBook> bookOpt = repositoryBook.findByTitle(trimmedTitle);
+        if (bookOpt.isEmpty()) {
+            bookOpt = repositoryBook.findByTitleIgnoreCase(trimmedTitle);
+        }
+        if (bookOpt.isEmpty()) {
+            List<EntityBook> list = repositoryBook.findByTitleContainingIgnoreCase(trimmedTitle);
+            if (!list.isEmpty()) {
+                bookOpt = Optional.of(list.get(0));
+            }
+        }
+
+        if (bookOpt.isEmpty()) {
+            response.error();
+            response.getListMessage().add("No se encontró el libro: " + title);
+            return null;
+        }
+
+        EntityBook book = bookOpt.get();
+        if (book.getAvailableCopies() <= 0) {
+            response.error();
+            response.getListMessage().add("El libro " + book.getTitle() + " no tiene copias disponibles.");
+            return null;
+        }
+        
+        book.setAvailableCopies(book.getAvailableCopies() - 1);
+        book.setUpdatedAt(new Date());
+        repositoryBook.save(book);
+
+        EntityReservation res = new EntityReservation();
+        res.setIdUser(user.getIdUser());
+        res.setIdBook(book.getIdBook());
+        res.setCode(randomCode);
+        res.setStatus(STATUS_PENDIENTE);
+
+        Date now = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(now);
+        cal.add(Calendar.MINUTE, 1);
+
+        res.setExpirationDate(cal.getTime());
+        res.setCreatedAt(now);
+        res.setUpdatedAt(now);
+
+        return repositoryReservation.save(res);
     }
 
     public ResponseDataGeneric<ResponseReservation> getByCode(String code) {
@@ -191,7 +204,7 @@ public class BusinessReservation {
             response.success();
         } else {
             response.error();
-            response.listMessage.add("No se encontró ninguna reserva con el código especificado");
+            response.getListMessage().add("No se encontró ninguna reserva con el código especificado");
         }
         return response;
     }
@@ -200,8 +213,8 @@ public class BusinessReservation {
         Date today = new Date();
         List<EntityReservation> list = repositoryReservation.findAll();
         for (EntityReservation r : list) {
-            if ("Pendiente".equalsIgnoreCase(r.getStatus()) && r.getExpirationDate() != null && r.getExpirationDate().before(today)) {
-                r.setStatus("Vencido");
+            if (STATUS_PENDIENTE.equalsIgnoreCase(r.getStatus()) && r.getExpirationDate() != null && r.getExpirationDate().before(today)) {
+                r.setStatus(STATUS_VENCIDO);
                 r.setUpdatedAt(today);
                 repositoryReservation.save(r);
 
@@ -222,44 +235,44 @@ public class BusinessReservation {
 
         List<ResponseReservation> resList = new ArrayList<>();
         for (java.util.Map.Entry<String, List<EntityReservation>> entry : grouped.entrySet()) {
-            List<EntityReservation> group = entry.getValue();
-            EntityReservation first = group.get(0);
-
-            ResponseReservation dto = new ResponseReservation();
-            dto.setIdReservation(first.getIdReservation());
-            dto.setCode(first.getCode());
-
-            if (first.getUser() != null) {
-                dto.setStudentName(first.getUser().getFirstName() + " " + first.getUser().getSurName());
-                dto.setUniversityCode(first.getUser().getUniversityCode());
-                dto.setEmail(first.getUser().getEmail());
-            } else {
-                dto.setStudentName("Estudiante UNAMBA");
-                dto.setUniversityCode("EST675839");
-                dto.setEmail("estudiante@unamba.edu.pe");
-            }
-
-            List<String> titles = new ArrayList<>();
-            for (EntityReservation er : group) {
-                if (er.getBook() != null && er.getBook().getTitle() != null) {
-                    titles.add(er.getBook().getTitle());
-                }
-            }
-            if (titles.isEmpty()) {
-                titles.add("Libro Reservado");
-            }
-
-            dto.setBookTitles(titles);
-            dto.setBookTitle(String.join(", ", titles));
-            dto.setStatus(first.getStatus());
-            
-            // Usar toString completo para mostrar fecha y hora (ej: Lunes 12:00:00)
-            dto.setExpirationDate(first.getExpirationDate() != null ? first.getExpirationDate().toString() : "");
-            dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString() : "");
-
-            resList.add(dto);
+            resList.add(mapToResponseReservation(entry.getValue()));
         }
 
         return resList;
+    }
+
+    private ResponseReservation mapToResponseReservation(List<EntityReservation> group) {
+        EntityReservation first = group.get(0);
+        ResponseReservation dto = new ResponseReservation();
+        dto.setIdReservation(first.getIdReservation());
+        dto.setCode(first.getCode());
+
+        if (first.getUser() != null) {
+            dto.setStudentName(first.getUser().getFirstName() + " " + first.getUser().getSurName());
+            dto.setUniversityCode(first.getUser().getUniversityCode());
+            dto.setEmail(first.getUser().getEmail());
+        } else {
+            dto.setStudentName("Estudiante UNAMBA");
+            dto.setUniversityCode("EST675839");
+            dto.setEmail("estudiante@unamba.edu.pe");
+        }
+
+        List<String> titles = new ArrayList<>();
+        for (EntityReservation er : group) {
+            if (er.getBook() != null && er.getBook().getTitle() != null) {
+                titles.add(er.getBook().getTitle());
+            }
+        }
+        if (titles.isEmpty()) {
+            titles.add("Libro Reservado");
+        }
+
+        dto.setBookTitles(titles);
+        dto.setBookTitle(String.join(", ", titles));
+        dto.setStatus(first.getStatus());
+        dto.setExpirationDate(first.getExpirationDate() != null ? first.getExpirationDate().toString() : "");
+        dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString() : "");
+
+        return dto;
     }
 }

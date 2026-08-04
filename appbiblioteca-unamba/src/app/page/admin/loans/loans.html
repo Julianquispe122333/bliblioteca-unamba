@@ -18,7 +18,7 @@
           placeholder="Cód. Reserva" 
           (keyup.enter)="searchReservation()"
           class="w-full text-sm font-mono uppercase bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-slate-800 outline-none" />
-        <p-button label="Buscar" icon="pi pi-search" (click)="searchReservation()" styleClass="w-full justify-center bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl" />
+        <p-button label="Buscar" icon="pi pi-search" (click)="searchReservation()" (keydown.enter)="searchReservation()" styleClass="w-full justify-center bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl" />
       </div>
     </div>
 
@@ -37,7 +37,7 @@
           placeholder="Cód. Préstamo" 
           (keyup.enter)="searchReturn()"
           class="w-full text-sm font-mono uppercase bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-slate-800 outline-none" />
-        <p-button label="Devolver" icon="pi pi-refresh" (click)="searchReturn()" styleClass="w-full justify-center bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-xl" />
+        <p-button label="Devolver" icon="pi pi-refresh" (click)="searchReturn()" (keydown.enter)="searchReturn()" styleClass="w-full justify-center bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-xl" />
       </div>
     </div>
   </div>
@@ -52,13 +52,13 @@
     <p-table [value]="loans" styleClass="p-datatable-sm" [rows]="10" [paginator]="true" responsiveLayout="scroll">
       <ng-template #header>
         <tr class="border-b border-slate-200 bg-slate-50">
-          <th class="text-xs font-bold text-slate-500 py-3 pl-3">Cód. Reserva</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Estudiante</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Libros</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Fecha Salida</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Devolución</th>
-          <th class="text-xs font-bold text-slate-500 py-3">Estado</th>
-          <th class="text-xs font-bold text-slate-500 py-3 text-right pr-3">Acciones</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3 pl-3">Cód. Reserva</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Estudiante</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Libros</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Fecha Salida</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Devolución</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3">Estado</th>
+          <th scope="col" class="text-xs font-bold text-slate-500 py-3 text-right pr-3">Acciones</th>
         </tr>
       </ng-template>
       <ng-template #body let-loan>
@@ -87,7 +87,7 @@
           </td>
           <td class="text-right py-3 pr-3">
             @if (loan.status === 'Prestado' || loan.status === 'Vencido') {
-              <p-button label="Devolver" icon="pi pi-check" severity="success" size="small" [outlined]="true" (click)="returnBook(loan)" />
+              <p-button label="Devolver" icon="pi pi-check" severity="success" size="small" [outlined]="true" (click)="returnBook(loan)" (keydown.enter)="returnBook(loan)" />
             } @else {
               <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Finalizado</span>
             }
@@ -160,12 +160,13 @@
       </div>
 
       <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
-        <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayLoanDialog = false" />
+        <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayLoanDialog = false" (keydown.enter)="displayLoanDialog = false" />
         <p-button 
           label="Registrar Salida" 
           icon="pi pi-check" 
           [disabled]="foundReservation.status !== 'Pendiente'"
           (click)="registerLoanFromReservation()" 
+          (keydown.enter)="registerLoanFromReservation()"
           styleClass="bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl" />
       </div>
     </div>
@@ -219,12 +220,13 @@
       <p class="text-sm text-slate-500 text-center font-medium my-2">¿Confirmas que recibiste los libros seleccionados en buen estado?</p>
 
       <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
-        <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayReturnDialog = false" />
+        <p-button label="Cancelar" [text]="true" severity="secondary" (click)="displayReturnDialog = false" (keydown.enter)="displayReturnDialog = false" />
         <p-button 
           label="Confirmar Devolución" 
           icon="pi pi-check" 
           [disabled]="booksReturningNow.length === 0"
           (click)="confirmReturnBook()" 
+          (keydown.enter)="confirmReturnBook()"
           styleClass="bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-xl" />
       </div>
     </div>

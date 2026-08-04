@@ -11,6 +11,8 @@ import com.epiis.apibiblioteca.repository.RepositoryCategory;
 
 @Service
 public class BusinessCategory {
+    private static final String MSG_CATEGORY_NOT_EXISTS = "La categoría no existe";
+
     private final RepositoryCategory repositoryCategory;
 
     public BusinessCategory(RepositoryCategory repositoryCategory) {
@@ -34,7 +36,7 @@ public class BusinessCategory {
                 category.setUpdatedAt(new Date());
             } else {
                 response.error();
-                response.listMessage.add("La categoría no existe");
+                response.getListMessage().add(MSG_CATEGORY_NOT_EXISTS);
                 return response;
             }
         } else {
@@ -47,7 +49,7 @@ public class BusinessCategory {
         EntityCategory saved = repositoryCategory.save(category);
         response.setData(saved);
         response.success();
-        response.listMessage.add("Categoría guardada correctamente");
+        response.getListMessage().add("Categoría guardada correctamente");
         return response;
     }
 
@@ -57,11 +59,11 @@ public class BusinessCategory {
             repositoryCategory.deleteById(idCategory);
             response.setData(true);
             response.success();
-            response.listMessage.add("Categoría eliminada correctamente");
+            response.getListMessage().add("Categoría eliminada correctamente");
         } else {
             response.setData(false);
             response.error();
-            response.listMessage.add("La categoría no existe");
+            response.getListMessage().add(MSG_CATEGORY_NOT_EXISTS);
         }
         return response;
     }

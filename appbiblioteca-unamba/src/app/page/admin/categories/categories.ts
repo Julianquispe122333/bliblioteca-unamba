@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
@@ -72,9 +71,15 @@ interface Category {
 
     <p-dialog 
       [(visible)]="displayDialog" 
-      [style]="{width: '450px'}" 
+      [style]="{width: '90vw', maxWidth: '450px'}" 
       [header]="isEditMode ? 'Editar Categoría' : 'Nueva Categoría'" 
       [modal]="true"
+      [draggable]="false"
+      [keepInViewport]="true"
+      [blockScroll]="true"
+      [closeOnEscape]="true"
+      [focusOnShow]="false"
+      appendTo="body"
       styleClass="backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-2xl overflow-hidden">
       
       <form [formGroup]="form" class="flex flex-col gap-5 py-4 px-2">
@@ -106,10 +111,11 @@ interface Category {
   providers: [MessageService, ConfirmationService]
 })
 export class AdminCategories implements OnInit {
-  private fb = inject(FormBuilder);
-  private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
-  private apiService = inject(ApiService);
+  private readonly fb = inject(FormBuilder);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly apiService = inject(ApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   categories: Category[] = [];
   displayDialog: boolean = false;
@@ -127,16 +133,20 @@ export class AdminCategories implements OnInit {
   loadCategories() {
     this.apiService.getCategories().subscribe({
       next: (res) => {
-        if (res && res.data) {
+        if (res?.data) {
           this.categories = res.data;
           localStorage.setItem('categories', JSON.stringify(this.categories));
         }
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         const storedCategories = localStorage.getItem('categories');
         if (storedCategories) {
           this.categories = JSON.parse(storedCategories);
         }
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -145,6 +155,7 @@ export class AdminCategories implements OnInit {
     this.isEditMode = false;
     this.form.reset();
     this.displayDialog = true;
+    this.cdr.detectChanges();
   }
 
   editCategory(cat: Category) {
@@ -152,6 +163,7 @@ export class AdminCategories implements OnInit {
     this.selectedId = cat.idCategory;
     this.form.patchValue({ name: cat.name });
     this.displayDialog = true;
+    this.cdr.detectChanges();
   }
 
   deleteCategory(cat: Category) {
@@ -166,11 +178,13 @@ export class AdminCategories implements OnInit {
           next: () => {
             this.loadCategories();
             this.messageService.add({ severity: 'success', summary: 'Eliminada', detail: 'Categoría eliminada.' });
+            this.cdr.detectChanges();
           },
           error: () => {
             this.categories = this.categories.filter(c => c.idCategory !== cat.idCategory);
             localStorage.setItem('categories', JSON.stringify(this.categories));
             this.messageService.add({ severity: 'success', summary: 'Eliminada', detail: 'Categoría eliminada (modo local).' });
+            this.cdr.detectChanges();
           }
         });
       }
@@ -194,6 +208,7 @@ export class AdminCategories implements OnInit {
             detail: this.isEditMode ? 'Categoría actualizada exitosamente.' : 'Nueva categoría registrada.' 
           });
           this.displayDialog = false;
+          this.cdr.detectChanges();
         },
         error: () => {
           if (this.isEditMode && this.selectedId !== undefined) {
@@ -210,8 +225,10 @@ export class AdminCategories implements OnInit {
           }
           localStorage.setItem('categories', JSON.stringify(this.categories));
           this.displayDialog = false;
+          this.cdr.detectChanges();
         }
       });
     }
   }
 }
+

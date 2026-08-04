@@ -26,10 +26,10 @@ import { AuthService } from '../../service/auth.service';
   providers: [MessageService]
 })
 export class Login {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private apiService = inject(ApiService);
-  private authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly apiService = inject(ApiService);
+  private readonly authService = inject(AuthService);
 
   correo: string = '';
   codigo: string = '';

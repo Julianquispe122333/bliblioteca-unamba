@@ -56,7 +56,8 @@
             label="Ingresar al Sistema" 
             icon="pi pi-sign-in" 
             styleClass="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium border-none rounded-xl transition-all shadow-md" 
-            (click)="ingresar()" />
+            (click)="ingresar()"
+            (keydown.enter)="ingresar()" />
         </div>
 
       </div>

@@ -9,7 +9,7 @@
       <p class="text-xs text-slate-400 mt-0.5">Gestiona el inventario de libros disponibles en la biblioteca</p>
     </div>
     <div class="flex gap-2 flex-wrap">
-      <p-button label="Autores y Categorías" icon="pi pi-cog" (click)="openManageDialog('authors')" styleClass="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-600 shadow-sm" />
+      <p-button label="Autores y Categorías" icon="pi pi-cog" (click)="openManageDialog('authors')" (keydown.enter)="openManageDialog('authors')" styleClass="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-600 shadow-sm" />
       <button (click)="openNewBook()"
               class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer text-white"
               style="background: linear-gradient(135deg, #4f46e5, #6366f1); border: none; box-shadow: 0 4px 12px rgba(79,70,229,0.3);"
@@ -36,13 +36,13 @@
   <p-table [value]="filteredBooks" [rows]="10" [paginator]="true" responsiveLayout="scroll" class="px-2 pb-2">
     <ng-template #header>
       <tr class="border-b border-slate-200 bg-slate-50">
-        <th class="text-xs font-bold text-slate-500 py-3 pl-3">Portada</th>
-        <th class="text-xs font-bold text-slate-500 py-3">Título</th>
-        <th class="text-xs font-bold text-slate-500 py-3">Autor</th>
-        <th class="text-xs font-bold text-slate-500 py-3">Categoría</th>
-        <th class="text-xs font-bold text-slate-500 py-3">Formatos</th>
-        <th class="text-xs font-bold text-slate-500 py-3">Disponible / Total</th>
-        <th class="text-xs font-bold text-slate-500 py-3 text-right pr-3">Acciones</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3 pl-3">Portada</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3">Título</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3">Autor</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3">Categoría</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3">Formatos</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3">Disponible / Total</th>
+        <th scope="col" class="text-xs font-bold text-slate-500 py-3 text-right pr-3">Acciones</th>
       </tr>
     </ng-template>
     <ng-template #body let-book>
@@ -68,8 +68,8 @@
         <td class="text-sm text-slate-650 py-3 font-semibold">{{ book.availableCopies }} / {{ book.totalCopies }}</td>
         <td class="text-right py-3 pr-3">
           <div class="inline-flex gap-1">
-            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary" (click)="editBook(book)" />
-            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteBook(book)" />
+            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary" (click)="editBook(book)" (keydown.enter)="editBook(book)" />
+            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteBook(book)" (keydown.enter)="deleteBook(book)" />
           </div>
         </td>
       </tr>
@@ -175,7 +175,7 @@
           </div>
 
           <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Archivo Digital (PDF) <span class="text-slate-400 font-normal lowercase">(opcional)</span></label>
+            <label for="pdfFileInput" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Archivo Digital (PDF) <span class="text-slate-400 font-normal lowercase">(opcional)</span></label>
             <input id="pdfFileInput" type="file" accept="application/pdf" class="hidden" (change)="onPdfFileSelected($event)" />
             
             @if (!bookForm.get('hasPdf')?.value) {
@@ -201,14 +201,14 @@
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
                   <label for="pdfFileInput" class="cursor-pointer px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all">Cambiar</label>
-                  <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="removePdf()" styleClass="w-7 h-7 p-0" />
+                  <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="removePdf()" (keydown.enter)="removePdf()" styleClass="w-7 h-7 p-0" />
                 </div>
               </div>
             }
           </div>
 
           <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Portada del Libro <span class="text-indigo-600 font-bold">*</span></label>
+            <label for="imageFileInput" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Portada del Libro <span class="text-indigo-600 font-bold">*</span></label>
             <input id="imageFileInput" type="file" accept="image/*" class="hidden" (change)="onImageFileSelected($event)" />
             
             @if (!imagePreview) {
@@ -224,7 +224,7 @@
               </label>
             } @else {
               <div class="relative rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-sm group" style="height: 130px;">
-                <img [src]="imagePreview" alt="Portada" class="w-full h-full object-cover" onerror="this.style.opacity='0'" />
+                <img [src]="imagePreview" alt="Portada" class="w-full h-full object-cover" />
                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                   <label for="imageFileInput" class="cursor-pointer px-3 py-1.5 bg-white rounded-xl text-xs font-bold text-indigo-700 shadow-lg hover:bg-indigo-50 transition-all flex items-center gap-1.5">
                     <i class="pi pi-pencil text-[11px]"></i> Cambiar
@@ -249,8 +249,8 @@
 
   <ng-template #footer>
     <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 px-2">
-      <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (click)="bookDialog = false" />
-      <p-button label="Guardar" icon="pi pi-check" (click)="saveBook()" styleClass="bg-indigo-600 hover:bg-indigo-750 border-none rounded-xl text-white" />
+      <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (click)="bookDialog = false" (keydown.enter)="bookDialog = false" />
+      <p-button label="Guardar" icon="pi pi-check" (click)="saveBook()" (keydown.enter)="saveBook()" styleClass="bg-indigo-600 hover:bg-indigo-750 border-none rounded-xl text-white" />
     </div>
   </ng-template>
 </p-dialog>
@@ -294,8 +294,8 @@
       </div>
     </div>
     <div class="flex justify-end gap-2 mt-4">
-      <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (click)="displayConfirmBook = false" />
-      <p-button label="Aceptar y Guardar" icon="pi pi-check" (click)="confirmSaveBook()" styleClass="bg-indigo-600 border-none rounded-xl text-white" />
+      <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (click)="displayConfirmBook = false" (keydown.enter)="displayConfirmBook = false" />
+      <p-button label="Aceptar y Guardar" icon="pi pi-check" (click)="confirmSaveBook()" (keydown.enter)="confirmSaveBook()" styleClass="bg-indigo-600 border-none rounded-xl text-white" />
     </div>
   </div>
 </p-dialog>

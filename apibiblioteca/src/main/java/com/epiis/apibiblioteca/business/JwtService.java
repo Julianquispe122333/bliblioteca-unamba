@@ -10,6 +10,7 @@ import io.jsonwebtoken.security.SignatureException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /**
@@ -21,7 +22,6 @@ import java.util.Date;
 public class JwtService {
 
     // Clave secreta de 256 bits (32 bytes) para HS256
-    // En producción, externalizar a application.properties
     private static final String SECRET_KEY_STRING =
             "biblioteca-unamba-jwt-secret-key-2024-ds2-epiis!";
 
@@ -31,8 +31,7 @@ public class JwtService {
     private static final long TOKEN_EXPIRATION_MS = 60_000L;
 
     public JwtService() {
-        // Keys.hmacShaKeyFor requiere mínimo 32 bytes para HS256
-        this.secretKey = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes());
+        this.secretKey = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -94,7 +93,7 @@ public class JwtService {
             return parseClaims(token).getExpiration().before(new Date());
         } catch (ExpiredJwtException e) {
             return true;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return false;
         }
     }

@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
@@ -122,10 +121,10 @@ interface Author {
   providers: [MessageService, ConfirmationService]
 })
 export class AdminAuthors implements OnInit {
-  private fb = inject(FormBuilder);
-  private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
-  private apiService = inject(ApiService);
+  private readonly fb = inject(FormBuilder);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly apiService = inject(ApiService);
 
   authors: Author[] = [];
   displayDialog: boolean = false;
@@ -141,12 +140,12 @@ export class AdminAuthors implements OnInit {
     this.loadAuthors();
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadAuthors() {
     this.apiService.getAuthors().subscribe({
       next: (res) => {
-        if (res && res.data) {
+        if (res?.data) {
           this.authors = res.data;
           localStorage.setItem('authors', JSON.stringify(this.authors));
         }

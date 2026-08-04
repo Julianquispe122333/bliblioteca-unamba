@@ -69,9 +69,9 @@ interface Reservation {
   providers: [MessageService]
 })
 export class StudentCatalog implements OnInit {
-  private router = inject(Router);
-  private messageService = inject(MessageService);
-  private apiService = inject(ApiService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly apiService = inject(ApiService);
 
   studentName: string = '';
   searchQuery: string = '';
@@ -113,42 +113,42 @@ export class StudentCatalog implements OnInit {
     this.loadBooks();
   }
 
-  private cdr = inject(ChangeDetectorRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadBooks(): void {
-    // PASO 1: Cargar inmediatamente desde localStorage para que el usuario vea datos al instante
-    this.loadCategoriesLocal();
-    this.loadAuthorsLocal();
-    this.loadBooksLocal();
+    // Inicializar lectura asíncrona de caché de sesión
+    this.extractLocalCategories();
+    this.extractLocalAuthors();
+    this.extractLocalBooks();
     this.cdr.detectChanges();
 
-    // PASO 2: Actualizar desde la API en segundo plano
+    // Actualizar base de datos desde backend en segundo plano
     forkJoin({
-      categories: this.apiService.getCategories().pipe(catchError(() => of(null))),
-      authors: this.apiService.getAuthors().pipe(catchError(() => of(null))),
-      books: this.apiService.getBooks().pipe(catchError(() => of(null)))
-    }).subscribe(({ categories, authors, books }) => {
-      if (categories?.data) {
-        this.dbCategories = categories.data;
+      catData: this.apiService.getCategories().pipe(catchError(() => of(null))),
+      authData: this.apiService.getAuthors().pipe(catchError(() => of(null))),
+      bookData: this.apiService.getBooks().pipe(catchError(() => of(null)))
+    }).subscribe(({ catData, authData, bookData }) => {
+      if (catData?.data) {
+        this.dbCategories = catData.data;
         localStorage.setItem('categories', JSON.stringify(this.dbCategories));
       }
-      if (authors?.data) {
-        this.dbAuthors = authors.data;
+      if (authData?.data) {
+        this.dbAuthors = authData.data;
         localStorage.setItem('authors', JSON.stringify(this.dbAuthors));
       }
-      if (books?.data) {
-        this.books = books.data;
+      if (bookData?.data) {
+        this.books = bookData.data;
       }
-      this.processBooks();
+      this.rearrangeBooksMeta();
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     });
   }
 
-  private loadCategoriesLocal(): void {
-    const storedCategories = localStorage.getItem('categories');
-    if (storedCategories) {
-      this.dbCategories = JSON.parse(storedCategories);
+  private extractLocalCategories(): void {
+    const categoriesBlob = localStorage.getItem('categories');
+    if (categoriesBlob) {
+      this.dbCategories = JSON.parse(categoriesBlob);
     } else {
       this.dbCategories = [
         { idCategory: 1, name: 'Sistemas' },
@@ -159,10 +159,10 @@ export class StudentCatalog implements OnInit {
     }
   }
 
-  private loadAuthorsLocal(): void {
-    const storedAuthors = localStorage.getItem('authors');
-    if (storedAuthors) {
-      this.dbAuthors = JSON.parse(storedAuthors);
+  private extractLocalAuthors(): void {
+    const authorsBlob = localStorage.getItem('authors');
+    if (authorsBlob) {
+      this.dbAuthors = JSON.parse(authorsBlob);
     } else {
       this.dbAuthors = [
         { idAuthor: 1, firstName: 'John', surName: 'Smith' },
@@ -174,33 +174,33 @@ export class StudentCatalog implements OnInit {
     }
   }
 
-  private processBooks(): void {
-    this.books.forEach(book => {
-      if (!book.categoryName && book.idCategory) {
-        const cat = this.dbCategories.find(c => c.idCategory === book.idCategory);
-        book.categoryName = cat ? cat.name : 'Sin Categoría';
+  private rearrangeBooksMeta(): void {
+    this.books.forEach(b => {
+      if (!b.categoryName && b.idCategory) {
+        const catObj = this.dbCategories.find(c => c.idCategory === b.idCategory);
+        b.categoryName = catObj ? catObj.name : 'Sin Categoría';
       }
-      if (!book.authorName && book.idAuthor) {
-        const auth = this.dbAuthors.find(a => a.idAuthor === book.idAuthor);
-        book.authorName = auth ? `${auth.firstName} ${auth.surName}` : 'Desconocido';
+      if (!b.authorName && b.idAuthor) {
+        const authObj = this.dbAuthors.find(a => a.idAuthor === b.idAuthor);
+        b.authorName = authObj ? `${authObj.firstName} ${authObj.surName}` : 'Desconocido';
       }
     });
     localStorage.setItem('books', JSON.stringify(this.books));
   }
 
-  private loadBooksLocal(): void {
-    const storedBooks = localStorage.getItem('books');
-    let list: Book[] = storedBooks ? JSON.parse(storedBooks) : [];
-    if (!list || list.length === 0) {
-      list = [
+  private extractLocalBooks(): void {
+    const booksBlob = localStorage.getItem('books');
+    let localList: Book[] = booksBlob ? JSON.parse(booksBlob) : [];
+    if (!localList || localList.length === 0) {
+      localList = [
         { idBook: 1, idCategory: 1, idAuthor: 1, title: 'Introducción a la Programación con Python', authorName: 'John Smith', totalCopies: 5, availableCopies: 5, description: 'Guía introductoria para aprender Python paso a paso.', hasPdf: true, image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&q=80' },
         { idBook: 2, idCategory: 2, idAuthor: 2, title: 'Cálculo de una Variable', authorName: 'James Stewart', totalCopies: 3, availableCopies: 2, description: 'Libro de texto clásico de cálculo riguroso.', hasPdf: false, image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80' },
         { idBook: 3, idCategory: 3, idAuthor: 3, title: 'Física Universitaria', authorName: 'Sears & Zemansky', totalCopies: 2, availableCopies: 2, description: 'Referencia para estudiantes de ciencias para dominar la física.', hasPdf: true, image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=400&q=80' },
         { idBook: 5, idCategory: 2, idAuthor: 5, title: 'Álgebra Lineal y sus Aplicaciones', authorName: 'Gilbert Strang', totalCopies: 1, availableCopies: 0, description: 'Conceptos fundamentales de matrices y espacios vectoriales.', hasPdf: false, image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80' }
       ];
     }
-    this.books = list;
-    this.processBooks();
+    this.books = localList;
+    this.rearrangeBooksMeta();
   }
 
   get filteredBooks(): Book[] {
@@ -227,10 +227,10 @@ export class StudentCatalog implements OnInit {
     }
 
     const index = this.selectedBooks.findIndex(b => b.idBook === book.idBook);
-    if (index !== -1) {
-      this.selectedBooks.splice(index, 1);
-    } else {
+    if (index === -1) {
       this.selectedBooks.push(book);
+    } else {
+      this.selectedBooks.splice(index, 1);
     }
   }
 
@@ -260,12 +260,12 @@ export class StudentCatalog implements OnInit {
       bookTitles: titles
     }).subscribe({
       next: (res) => {
-        if (res && res.type === 'error') {
+        if (res?.type === 'error') {
           const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al realizar la reserva';
           this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 3500 });
           return;
         }
-        const code = (res && res.data && res.data.code) ? res.data.code : ('RES' + Math.floor(1000 + Math.random() * 9000));
+        const code = res?.data?.code || ('RES' + Math.floor(1000 + Math.random() * 9000));
         this.confirmReservationSuccess(code);
       },
       error: (err) => {
@@ -311,7 +311,7 @@ export class StudentCatalog implements OnInit {
       code: randomCode,
       studentName: this.studentName,
       universityCode: 'EST' + Math.floor(100000 + Math.random() * 900000),
-      email: this.studentName.toLowerCase().replace(/\s/g, '.') + '@unamba.edu.pe',
+      email: this.studentName.toLowerCase().replaceAll(' ', '.') + '@unamba.edu.pe',
       bookTitles: titles,
       bookTitle: titles.join(', '),
       status: 'Pendiente',
@@ -334,7 +334,16 @@ export class StudentCatalog implements OnInit {
     if (this.selectedBook?.pdfUrl) {
       const win = window.open();
       if (win) {
-        win.document.write(`<title>${this.selectedBook.title} - PDF</title><style>html,body{margin:0;height:100%;overflow:hidden;}</style><iframe width="100%" height="100%" src="${this.selectedBook.pdfUrl}" frameborder="0"></iframe>`);
+        win.document.title = `${this.selectedBook.title} - PDF`;
+        win.document.body.style.margin = '0';
+        win.document.body.style.height = '100%';
+        win.document.body.style.overflow = 'hidden';
+        const iframe = win.document.createElement('iframe');
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        iframe.src = this.selectedBook.pdfUrl;
+        win.document.body.appendChild(iframe);
       } else {
         this.displayPdfDialog = true;
       }

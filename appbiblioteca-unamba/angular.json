@@ -77,7 +77,7 @@
             "coverage": true,
             "coverageReporters": ["lcov", "text-summary"],
             "coverageInclude": ["src/**/*.ts"],
-            "coverageExclude": ["**/node_modules/**", "**/*.spec.ts", "src/main.ts"]
+            "coverageExclude": ["**/node_modules/**", "**/*.spec.ts"]
           }
         }
       }

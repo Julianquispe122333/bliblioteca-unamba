@@ -305,4 +305,59 @@ describe('LoanManagement Component', () => {
     comp.books = [];
     expect(comp.getBookCategory('Unknown')).toBe('Sin Categoría');
   });
+
+  it('should mark expired reservations as Vencido on loadReservationsLocal', () => {
+    apiServiceSpy.getReservations.mockReturnValue(of(null));
+    apiServiceSpy.getLoans.mockReturnValue(of(null));
+    apiServiceSpy.getBooks.mockReturnValue(of(null));
+
+    const expiredReservation = {
+      idReservation: 10,
+      code: 'EXPRES',
+      studentName: 'Juan',
+      universityCode: '001',
+      email: 'j@u.pe',
+      bookTitle: 'Python',
+      status: 'Pendiente',
+      expirationDate: '2020-01-01', // Past date
+      createdAt: '2020-01-01'
+    };
+    localStorage.setItem('reservations', JSON.stringify([expiredReservation]));
+    localStorage.setItem('books', JSON.stringify([{ idBook: 1, title: 'Python', availableCopies: 2 }]));
+    localStorage.setItem('currentUser', JSON.stringify({ username: 'Admin', role: 'admin' }));
+
+    const fixture = TestBed.createComponent(LoanManagement);
+    fixture.componentInstance.ngOnInit();
+
+    const res = fixture.componentInstance.reservations.find(r => r.code === 'EXPRES');
+    expect(res).toBeDefined();
+    expect(res?.status).toBe('Vencido');
+  });
+
+  it('should mark expired loans as Vencido on loadLoansLocal', () => {
+    apiServiceSpy.getReservations.mockReturnValue(of(null));
+    apiServiceSpy.getLoans.mockReturnValue(of(null));
+    apiServiceSpy.getBooks.mockReturnValue(of(null));
+
+    const expiredLoan = {
+      idLoan: 10,
+      reservationCode: 'EXPLOAN',
+      bookTitle: 'Python',
+      studentName: 'Juan',
+      loanDate: '2020-01-01',
+      dueDate: '2020-01-05', // Past date
+      returnDate: null,
+      status: 'Prestado',
+      loanBooks: [{ title: 'Python', returned: false }]
+    };
+    localStorage.setItem('loans', JSON.stringify([expiredLoan]));
+    localStorage.setItem('currentUser', JSON.stringify({ username: 'Admin', role: 'admin' }));
+
+    const fixture = TestBed.createComponent(LoanManagement);
+    fixture.componentInstance.ngOnInit();
+
+    const ln = fixture.componentInstance.loans.find(l => l.reservationCode === 'EXPLOAN');
+    expect(ln).toBeDefined();
+    expect(ln?.status).toBe('Vencido');
+  });
 });

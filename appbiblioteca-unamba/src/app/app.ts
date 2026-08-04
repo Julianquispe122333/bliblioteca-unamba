@@ -26,7 +26,7 @@ interface MenuOption {
   styleUrls: ['./app.css']
 })
 export class App implements OnInit {
-  private router = inject(Router);
+  private readonly router = inject(Router);
 
   isLoginPage: boolean = true;
   userRole: 'student' | 'admin' | null = null;

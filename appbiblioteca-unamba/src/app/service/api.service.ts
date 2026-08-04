@@ -13,8 +13,8 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class ApiService {
-  private http = inject(HttpClient);
-  private baseUrl = environment.urlBase;
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.urlBase;
 
   // Login
   login(email: string, code: string, role: string): Observable<any> {
