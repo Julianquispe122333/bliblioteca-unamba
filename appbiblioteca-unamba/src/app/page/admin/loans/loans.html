@@ -1,4 +1,4 @@
-<p-toast />
+<p-toast appendTo="body" />
 
 <div class="flex flex-col gap-6">
   
@@ -106,12 +106,15 @@
 <!-- Reservation Detail Dialogue (Confirm loan creation) -->
 <p-dialog 
   [(visible)]="displayLoanDialog" 
-  [style]="{width: '450px'}" 
-  header="Información de la Reserva" 
+  [style]="{width: '90vw', maxWidth: '450px'}" 
+  [header]="'Información de la Reserva'" 
   [modal]="true"
   [draggable]="false"
   [keepInViewport]="true"
-  styleClass="bg-white border border-slate-200 rounded-2xl shadow-xl text-slate-700">
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body">
   
   @if (foundReservation) {
     <div class="flex flex-col gap-4 py-2 px-1">
@@ -120,9 +123,6 @@
         <span class="font-mono font-bold text-indigo-700 text-lg tracking-wider">{{ foundReservation.code }}</span>
       </div>
       
-      <!-- Resto del modal igual... -->
-
-
       <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Datos del Estudiante</p>
         <div class="flex flex-col gap-2">
@@ -175,12 +175,15 @@
 <!-- Return Detail Dialogue (Confirm book return) -->
 <p-dialog 
   [(visible)]="displayReturnDialog" 
-  [style]="{width: '450px'}" 
-  header="Confirmar Devolución" 
+  [style]="{width: '90vw', maxWidth: '450px'}" 
+  [header]="'Confirmar Devolución'" 
   [modal]="true"
   [draggable]="false"
   [keepInViewport]="true"
-  styleClass="bg-white border border-slate-200 rounded-2xl shadow-xl text-slate-700">
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body">
   
   @if (foundLoan) {
     <div class="flex flex-col gap-4 py-2 px-1">

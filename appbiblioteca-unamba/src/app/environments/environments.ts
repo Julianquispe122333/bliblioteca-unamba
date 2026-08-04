@@ -1,4 +1,4 @@
 export const environment = {
-    production: true,
-    urlBase: 'https://bliblioteca-unamba-production.up.railway.app'
+    production: false,
+    urlBase: 'http://localhost:8080'
 };

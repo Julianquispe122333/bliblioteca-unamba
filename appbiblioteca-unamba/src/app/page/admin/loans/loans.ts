@@ -128,9 +128,18 @@ export class LoanManagement implements OnInit {
       reservations: this.apiService.getReservations().pipe(catchError(() => of(null))),
       loans: this.apiService.getLoans().pipe(catchError(() => of(null)))
     }).subscribe(({ books, reservations, loans }) => {
-      if (books?.data) this.books = books.data;
-      if (reservations?.data) this.reservations = reservations.data;
-      if (loans?.data) this.loans = loans.data;
+      if (books?.data) {
+        this.books = books.data;
+        localStorage.setItem('books', JSON.stringify(this.books));
+      }
+      if (reservations?.data) {
+        this.reservations = reservations.data;
+        localStorage.setItem('reservations', JSON.stringify(this.reservations));
+      }
+      if (loans?.data) {
+        this.loans = loans.data;
+        localStorage.setItem('loans', JSON.stringify(this.loans));
+      }
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     });

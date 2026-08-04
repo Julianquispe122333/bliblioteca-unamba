@@ -24,14 +24,50 @@ public class BusinessAuthor {
 
     public ResponseDataGeneric<EntityAuthor> save(RequestAuthorSave request) {
         ResponseDataGeneric<EntityAuthor> response = new ResponseDataGeneric<>();
+        
+        String firstName = request.getFirstName() != null ? request.getFirstName().trim() : "";
+        String surName = request.getSurName() != null ? request.getSurName().trim() : "";
+
+        if (firstName.isEmpty()) {
+            response.error();
+            response.listMessage.add("El nombre es obligatorio");
+            return response;
+        }
+        if (surName.isEmpty()) {
+            response.error();
+            response.listMessage.add("El apellido es obligatorio");
+            return response;
+        }
+        if (firstName.length() > 50) {
+            response.error();
+            response.listMessage.add("El nombre no puede tener más de 50 caracteres");
+            return response;
+        }
+        if (surName.length() > 40) {
+            response.error();
+            response.listMessage.add("El apellido no puede tener más de 40 caracteres");
+            return response;
+        }
+
+        // Validar duplicado por nombres y apellidos
+        Optional<EntityAuthor> optExisting = repositoryAuthor.findByFirstNameAndSurName(firstName, surName);
+        if (optExisting.isPresent()) {
+            EntityAuthor existing = optExisting.get();
+            if (request.getIdAuthor() == null || !existing.getIdAuthor().equals(request.getIdAuthor())) {
+                response.error();
+                response.listMessage.add("El autor con este nombre y apellido ya está registrado");
+                return response;
+            }
+        }
+
         EntityAuthor author;
 
         if (request.getIdAuthor() != null && request.getIdAuthor() > 0) {
             Optional<EntityAuthor> opt = repositoryAuthor.findById(request.getIdAuthor());
             if (opt.isPresent()) {
                 author = opt.get();
-                author.setFirstName(request.getFirstName().trim());
-                author.setSurName(request.getSurName().trim());
+                author.setFirstName(firstName);
+                author.setSurName(surName);
                 author.setUpdatedAt(new Date());
             } else {
                 response.error();
@@ -40,8 +76,8 @@ public class BusinessAuthor {
             }
         } else {
             author = new EntityAuthor();
-            author.setFirstName(request.getFirstName().trim());
-            author.setSurName(request.getSurName().trim());
+            author.setFirstName(firstName);
+            author.setSurName(surName);
             author.setCreatedAt(new Date());
             author.setUpdatedAt(author.getCreatedAt());
         }

@@ -149,12 +149,12 @@ export class BookCrud implements OnInit {
 
   initForm(): void {
     this.bookForm = this.fb.group({
-      title: ['', Validators.required],
-      idAuthor: [null, Validators.required],
-      idCategory: [null, Validators.required],
+      title: ['', [Validators.required, this.noWhitespaceValidator]],
+      idAuthor: [null, [Validators.required, this.noWhitespaceValidator]],
+      idCategory: [null, [Validators.required, this.noWhitespaceValidator]],
       totalCopies: [null, [Validators.required, Validators.min(1)]],
       availableCopies: [null, [Validators.required, Validators.min(0)]],
-      description: ['', Validators.required],
+      description: ['', [Validators.required, this.noWhitespaceValidator]],
       hasPdf: [false],
       pdfFileName: [''],
       pdfUrl: [''],
@@ -169,6 +169,20 @@ export class BookCrud implements OnInit {
       return { invalidCopies: true };
     }
     return null;
+  }
+
+  noWhitespaceValidator(control: import('@angular/forms').AbstractControl): import('@angular/forms').ValidationErrors | null {
+    const val = control.value;
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'string' && val.trim().length === 0) {
+      return { required: true };
+    }
+    return null;
+  }
+
+  isFieldInvalid(field: string): boolean {
+    const control = this.bookForm.get(field);
+    return !!(control && control.invalid && (control.dirty || control.touched));
   }
 
   private cdr = inject(ChangeDetectorRef);
@@ -335,12 +349,15 @@ export class BookCrud implements OnInit {
   }
 
   saveBook(): void {
-    if (this.bookForm.invalid) return;
+    if (this.bookForm.invalid) {
+      this.bookForm.markAllAsTouched();
+      return;
+    }
 
     const bookData = this.bookForm.value;
     
     if (bookData.availableCopies > bookData.totalCopies) {
-      this.messageService.add({ severity: 'error', summary: 'Error de Stock', detail: 'Las copias disponibles no pueden superar a las copias totales.' });
+      this.messageService.add({ severity: 'error', summary: 'Error de Stock', detail: 'El stock disponible no puede superar al stock total.' });
       return;
     }
 

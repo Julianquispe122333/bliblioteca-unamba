@@ -18,7 +18,10 @@ import com.epiis.apibiblioteca.repository.RepositoryBook;
 import com.epiis.apibiblioteca.repository.RepositoryLoan;
 import com.epiis.apibiblioteca.repository.RepositoryReservation;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional
 public class BusinessLoan {
     private final RepositoryLoan repositoryLoan;
     private final RepositoryReservation repositoryReservation;
@@ -55,6 +58,24 @@ public class BusinessLoan {
         }
 
         EntityReservation res = resList.get(0);
+        Date now = new Date();
+        if ("Pendiente".equalsIgnoreCase(res.getStatus()) && res.getExpirationDate() != null && res.getExpirationDate().before(now)) {
+            for (EntityReservation r : resList) {
+                r.setStatus("Vencido");
+                r.setUpdatedAt(now);
+                repositoryReservation.save(r);
+                
+                if (r.getBook() != null) {
+                    EntityBook b = r.getBook();
+                    b.setAvailableCopies(b.getAvailableCopies() + 1);
+                    repositoryBook.save(b);
+                }
+            }
+            response.error();
+            response.listMessage.add("Esta reserva ya expiró y no se puede atender");
+            return response;
+        }
+
         if ("Atendido".equalsIgnoreCase(res.getStatus())) {
             response.error();
             response.listMessage.add("Esta reserva ya fue atendida");
@@ -72,7 +93,7 @@ public class BusinessLoan {
             repositoryReservation.save(r);
         }
 
-        Date now = new Date();
+        now = new Date();
         Calendar cal = Calendar.getInstance();
         cal.setTime(now);
         cal.add(Calendar.DAY_OF_MONTH, 7); // Plazo de 7 días
@@ -108,7 +129,6 @@ public class BusinessLoan {
 
         EntityReservation res = resList.get(0);
         Optional<EntityLoan> loanOpt = repositoryLoan.findByIdReservation(res.getIdReservation());
-
         if (!loanOpt.isPresent()) {
             response.error();
             response.listMessage.add("No se encontró un préstamo activo asociado");
@@ -116,22 +136,49 @@ public class BusinessLoan {
         }
 
         EntityLoan loan = loanOpt.get();
-        loan.setStatus("Devuelto");
-        loan.setReturnDate(new Date());
-        loan.setUpdatedAt(new Date());
+        boolean anyUpdated = false;
 
         for (EntityReservation r : resList) {
-            if (r.getBook() != null) {
-                EntityBook b = r.getBook();
-                b.setAvailableCopies(b.getAvailableCopies() + 1);
-                repositoryBook.save(b);
+            if (r.getBook() != null && request.getBooksReturningNow().contains(r.getBook().getTitle())) {
+                if (!"Devuelto".equalsIgnoreCase(r.getStatus())) {
+                    r.setStatus("Devuelto");
+                    r.setUpdatedAt(new Date());
+                    repositoryReservation.save(r);
+                    
+                    EntityBook b = r.getBook();
+                    b.setAvailableCopies(b.getAvailableCopies() + 1);
+                    repositoryBook.save(b);
+                    
+                    anyUpdated = true;
+                }
             }
         }
 
+        // Verificar si todas las reservas de este código ya han sido devueltas
+        boolean allReturned = true;
+        for (EntityReservation r : resList) {
+            if (!"Devuelto".equalsIgnoreCase(r.getStatus())) {
+                allReturned = false;
+                break;
+            }
+        }
+
+        if (allReturned) {
+            loan.setStatus("Devuelto");
+            loan.setReturnDate(new Date());
+            loan.setUpdatedAt(new Date());
+        }
+
         EntityLoan updatedLoan = repositoryLoan.save(loan);
-        response.setData(convertToResponse(updatedLoan));
-        response.success();
-        response.listMessage.add("Devolución registrada correctamente");
+
+        if (anyUpdated) {
+            response.setData(convertToResponse(updatedLoan));
+            response.success();
+            response.listMessage.add("Devolución registrada correctamente");
+        } else {
+            response.error();
+            response.listMessage.add("No se encontraron libros pendientes de devolución en la selección");
+        }
 
         return response;
     }
@@ -153,10 +200,30 @@ public class BusinessLoan {
         dto.setIdLoan(l.getIdLoan());
         
         if (l.getReservation() != null) {
-            dto.setReservationCode(l.getReservation().getCode());
-            if (l.getReservation().getBook() != null) {
-                dto.setBookTitle(l.getReservation().getBook().getTitle());
+            String reservationCode = l.getReservation().getCode();
+            dto.setReservationCode(reservationCode);
+            
+            List<EntityReservation> allRes = repositoryReservation.findAllByCode(reservationCode);
+            List<ResponseLoanBook> booksList = new ArrayList<>();
+            StringBuilder titlesBuilder = new StringBuilder();
+            
+            for (EntityReservation r : allRes) {
+                if (r.getBook() != null) {
+                    if (titlesBuilder.length() > 0) {
+                        titlesBuilder.append(", ");
+                    }
+                    titlesBuilder.append(r.getBook().getTitle());
+                    
+                    ResponseLoanBook rlb = new ResponseLoanBook();
+                    rlb.setTitle(r.getBook().getTitle());
+                    rlb.setReturned("Devuelto".equalsIgnoreCase(l.getStatus()));
+                    booksList.add(rlb);
+                }
             }
+            
+            dto.setBookTitle(titlesBuilder.toString());
+            dto.setLoanBooks(booksList);
+            
             if (l.getReservation().getUser() != null) {
                 dto.setStudentName(l.getReservation().getUser().getFirstName() + " " + l.getReservation().getUser().getSurName());
             }
@@ -167,13 +234,6 @@ public class BusinessLoan {
         dto.setReturnDate(l.getReturnDate() != null ? l.getReturnDate().toString() : null);
         dto.setStatus(l.getStatus());
 
-        List<ResponseLoanBook> booksList = new ArrayList<>();
-        ResponseLoanBook rlb = new ResponseLoanBook();
-        rlb.setTitle(dto.getBookTitle() != null ? dto.getBookTitle() : "Libro en Préstamo");
-        rlb.setReturned("Devuelto".equalsIgnoreCase(l.getStatus()));
-        booksList.add(rlb);
-
-        dto.setLoanBooks(booksList);
         return dto;
     }
 }

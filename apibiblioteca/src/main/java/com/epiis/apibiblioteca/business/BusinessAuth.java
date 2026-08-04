@@ -10,9 +10,11 @@ import com.epiis.apibiblioteca.repository.RepositoryUser;
 @Service
 public class BusinessAuth {
     private final RepositoryUser repositoryUser;
+    private final JwtService jwtService;
 
-    public BusinessAuth(RepositoryUser repositoryUser) {
+    public BusinessAuth(RepositoryUser repositoryUser, JwtService jwtService) {
         this.repositoryUser = repositoryUser;
+        this.jwtService = jwtService;
     }
 
     public ResponseLogin login(RequestLogin request) {
@@ -20,8 +22,6 @@ public class BusinessAuth {
         
         String reqEmail = request.getEmail() != null ? request.getEmail().trim() : "";
         String reqCode = request.getCode() != null ? request.getCode().trim() : "";
-        String reqRole = request.getRole() != null ? request.getRole().trim() : "";
-
         // Buscar usuario por correo o codigo universitario
         Optional<EntityUser> optionalUser = repositoryUser.findByEmail(reqEmail);
         if (!optionalUser.isPresent()) {
@@ -50,25 +50,12 @@ public class BusinessAuth {
             return response;
         }
 
-        // Validar Rol
-        boolean isAdminRequested = "admin".equalsIgnoreCase(reqRole) || "Bibliotecario".equalsIgnoreCase(reqRole);
+        // Determinar Rol automáticamente basado en la BD
         boolean isUserAdmin = "Bibliotecario".equalsIgnoreCase(user.getRole());
-
-        if (isAdminRequested && !isUserAdmin) {
-            response.error();
-            response.listMessage.add("El usuario no tiene permisos de Administrador");
-            return response;
-        }
-
-        if (!isAdminRequested && isUserAdmin) {
-            response.error();
-            response.listMessage.add("El usuario es Administrador. Por favor seleccione el rol Administrador");
-            return response;
-        }
+        String roleFrontend = isUserAdmin ? "admin" : "student";
 
         // Login Exitoso
         response.setIdUser(user.getIdUser());
-        String roleFrontend = isUserAdmin ? "admin" : "student";
         response.setRole(roleFrontend);
         response.setCorreo(user.getEmail());
         response.setCodigo(user.getUniversityCode());
@@ -78,6 +65,10 @@ public class BusinessAuth {
             displayName = ("admin".equals(roleFrontend) ? "Administrador" : "Estudiante") + " UNAMBA";
         }
         response.setUsername(displayName);
+
+        // Generar JWT con expiración de 60 segundos
+        String token = jwtService.generateToken(user.getEmail(), roleFrontend);
+        response.setToken(token);
 
         response.success();
         response.listMessage.add("Inicio de sesión exitoso");

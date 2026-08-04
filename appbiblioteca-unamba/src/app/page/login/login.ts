@@ -4,11 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../service/api.service';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +18,6 @@ import { ApiService } from '../../service/api.service';
     FormsModule,
     CardModule,
     ButtonModule,
-    SelectModule,
     ToastModule,
     InputTextModule
   ],
@@ -30,15 +29,10 @@ export class Login {
   private router = inject(Router);
   private messageService = inject(MessageService);
   private apiService = inject(ApiService);
+  private authService = inject(AuthService);
 
   correo: string = '';
   codigo: string = '';
-  selectedRole: string = 'student';
-
-  roles = [
-    { name: 'Estudiante', value: 'student' },
-    { name: 'Administrador', value: 'admin' }
-  ];
 
   ingresar(): void {
     if (!this.correo.trim() || !this.codigo.trim()) {
@@ -51,7 +45,7 @@ export class Login {
       return;
     }
 
-    this.apiService.login(this.correo, this.codigo, this.selectedRole).subscribe({
+    this.apiService.login(this.correo, this.codigo, '').subscribe({
       next: (res) => {
         if (res.type === 'error' || res.type === 'exception') {
           const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Credenciales incorrectas';
@@ -64,15 +58,16 @@ export class Login {
           return;
         }
 
-        const userRole = res.role || this.selectedRole;
+        const userRole = res.role || 'student';
         const username = res.username || `${userRole === 'admin' ? 'Administrador' : 'Estudiante'} UNAMBA`;
 
-        localStorage.setItem('currentUser', JSON.stringify({
-          username,
-          role: userRole,
+        this.authService.setSession({
+          idUser: res.idUser || 0,
+          username: username,
+          role: userRole as 'admin' | 'student',
           correo: res.correo || this.correo,
           codigo: res.codigo || this.codigo
-        }));
+        }, res.token || '');
 
         if (userRole === 'admin') {
           this.router.navigate(['/admin/home']);

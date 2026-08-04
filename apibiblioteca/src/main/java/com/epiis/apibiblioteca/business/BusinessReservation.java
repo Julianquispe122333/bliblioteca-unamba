@@ -17,7 +17,10 @@ import com.epiis.apibiblioteca.repository.RepositoryBook;
 import com.epiis.apibiblioteca.repository.RepositoryReservation;
 import com.epiis.apibiblioteca.repository.RepositoryUser;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional
 public class BusinessReservation {
     private final RepositoryReservation repositoryReservation;
     private final RepositoryBook repositoryBook;
@@ -129,19 +132,24 @@ public class BusinessReservation {
                 }
             }
 
-            if (bookOpt.isPresent()) {
-                EntityBook book = bookOpt.get();
-                if (book.getAvailableCopies() <= 0) {
-                    response.error();
-                    response.listMessage.add("El libro " + book.getTitle() + " no tiene copias disponibles.");
-                    return response;
-                }
-                
-                book.setAvailableCopies(book.getAvailableCopies() - 1);
-                book.setUpdatedAt(new Date());
-                repositoryBook.save(book);
+            if (!bookOpt.isPresent()) {
+                response.error();
+                response.listMessage.add("No se encontró el libro: " + title);
+                return response;
+            }
 
-                EntityReservation res = new EntityReservation();
+            EntityBook book = bookOpt.get();
+            if (book.getAvailableCopies() <= 0) {
+                response.error();
+                response.listMessage.add("El libro " + book.getTitle() + " no tiene copias disponibles.");
+                return response;
+            }
+            
+            book.setAvailableCopies(book.getAvailableCopies() - 1);
+            book.setUpdatedAt(new Date());
+            repositoryBook.save(book);
+
+            EntityReservation res = new EntityReservation();
                 res.setIdUser(user.getIdUser());
                 res.setIdBook(book.getIdBook());
                 res.setCode(randomCode);
@@ -150,14 +158,13 @@ public class BusinessReservation {
                 Date now = new Date();
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(now);
-                cal.add(Calendar.DAY_OF_MONTH, 1);
+                cal.add(Calendar.MINUTE, 1);
 
                 res.setExpirationDate(cal.getTime());
                 res.setCreatedAt(now);
                 res.setUpdatedAt(now);
 
                 lastSavedRes = repositoryReservation.save(res);
-            }
         }
 
         if (lastSavedRes != null) {
@@ -175,6 +182,7 @@ public class BusinessReservation {
     }
 
     public ResponseDataGeneric<ResponseReservation> getByCode(String code) {
+        checkExpirations();
         ResponseDataGeneric<ResponseReservation> response = new ResponseDataGeneric<>();
         List<EntityReservation> list = repositoryReservation.findAllByCode(code.trim().toUpperCase());
         if (!list.isEmpty()) {
@@ -244,8 +252,10 @@ public class BusinessReservation {
             dto.setBookTitles(titles);
             dto.setBookTitle(String.join(", ", titles));
             dto.setStatus(first.getStatus());
-            dto.setExpirationDate(first.getExpirationDate() != null ? first.getExpirationDate().toString().split(" ")[0] : "");
-            dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString().split(" ")[0] : "");
+            
+            // Usar toString completo para mostrar fecha y hora (ej: Lunes 12:00:00)
+            dto.setExpirationDate(first.getExpirationDate() != null ? first.getExpirationDate().toString() : "");
+            dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString() : "");
 
             resList.add(dto);
         }

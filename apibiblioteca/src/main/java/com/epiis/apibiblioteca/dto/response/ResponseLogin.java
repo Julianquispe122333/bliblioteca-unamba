@@ -12,4 +12,5 @@ public class ResponseLogin extends ResponseGeneric {
     private String role;
     private String correo;
     private String codigo;
+    private String token;
 }

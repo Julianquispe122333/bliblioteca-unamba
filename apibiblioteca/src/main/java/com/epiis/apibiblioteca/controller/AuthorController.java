@@ -2,6 +2,7 @@ package com.epiis.apibiblioteca.controller;
 
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,8 +31,20 @@ public class AuthorController {
     }
 
     @PostMapping
-    public ResponseEntity<ResponseDataGeneric<EntityAuthor>> save(@Valid @RequestBody RequestAuthorSave request) {
-        return ResponseEntity.ok(businessAuthor.save(request));
+    public ResponseEntity<ResponseDataGeneric<EntityAuthor>> save(@Valid @RequestBody RequestAuthorSave request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ResponseDataGeneric<EntityAuthor> response = new ResponseDataGeneric<>();
+            response.error();
+            bindingResult.getAllErrors().forEach(error -> response.listMessage.add(error.getDefaultMessage()));
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        ResponseDataGeneric<EntityAuthor> response = businessAuthor.save(request);
+        if ("error".equalsIgnoreCase(response.getType())) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping(path = "{id}")

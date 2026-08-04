@@ -1,4 +1,4 @@
-<p-toast />
+<p-toast appendTo="body" />
 
 <div class="flex flex-col gap-8 pb-8">
   <!-- Search & Category Filters -->
@@ -146,14 +146,20 @@
 <!-- Cart / Reservation Dialog -->
 <p-dialog 
   [(visible)]="displayCartDialog" 
-  [style]="{width: '520px'}" 
-  header="Libros Seleccionados para Reserva" 
+  [style]="{width: '90vw', maxWidth: '520px'}" 
+  [header]="'Libros Seleccionados para Reserva'" 
   [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body"
   styleClass="backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-2xl overflow-hidden">
   
   <div class="flex flex-col gap-5 py-3 px-2">
     <div class="bg-indigo-50/80 border border-indigo-100/50 p-4 rounded-2xl text-center shadow-sm">
-      <p class="text-xs text-indigo-700 font-medium">Se generará <strong class="font-extrabold bg-white px-2 py-0.5 rounded shadow-sm mx-1">un solo código</strong> para retirar todos los libros seleccionados en biblioteca.</p>
+      <p class="text-xs text-indigo-700 font-medium">Se generará un solo código para retirar todos los libros seleccionados en biblioteca.</p>
     </div>
 
     <div class="flex flex-col gap-3">
@@ -197,9 +203,15 @@
 <!-- Book Detail Dialog -->
 <p-dialog 
   [(visible)]="displayDetailDialog" 
-  [style]="{width: '600px'}" 
-  header="Detalles del Libro" 
+  [style]="{width: '90vw', maxWidth: '600px'}" 
+  [header]="'Detalles del Libro'" 
   [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body"
   styleClass="backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-2xl overflow-hidden">
   
   @if (selectedBook) {
@@ -265,9 +277,15 @@
 <!-- PDF Preview Dialog -->
 <p-dialog 
   [(visible)]="displayPdfDialog" 
-  [style]="{width: '700px', height: '500px'}" 
-  header="Visualizador PDF (Demostración)" 
-  [modal]="true">
+  [style]="{width: '90vw', maxWidth: '700px', height: 'auto', maxHeight: '90vh'}" 
+  [header]="'Visualizador PDF (Demostración)'" 
+  [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body">
   <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-xl p-8 border border-slate-200 text-center gap-4">
     <div class="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-400">
       <i class="pi pi-file-pdf text-3xl"></i>
@@ -285,9 +303,15 @@
 <!-- Success Reservation Dialog -->
 <p-dialog 
   [(visible)]="displaySuccessDialog" 
-  [style]="{width: '450px'}" 
-  header="¡Reserva Exitosa!" 
+  [style]="{width: '90vw', maxWidth: '450px'}" 
+  [header]="'¡Reserva Exitosa!'" 
   [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="false"
+  [focusOnShow]="false"
+  appendTo="body"
   styleClass="backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-2xl overflow-hidden">
   
   <div class="flex flex-col gap-5 py-4 px-2 text-center">

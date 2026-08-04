@@ -32,8 +32,8 @@ interface Author {
     ConfirmDialogModule
   ],
   template: `
-    <p-toast />
-    <p-confirmdialog />
+    <p-toast appendTo="body" />
+    <p-confirmdialog appendTo="body" />
 
     <div class="bg-white border border-slate-200/80 rounded-[2rem] p-6 sm:p-8 flex flex-col gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6">
@@ -75,9 +75,15 @@ interface Author {
 
     <p-dialog 
       [(visible)]="displayDialog" 
-      [style]="{width: '450px'}" 
+      [style]="{width: '90vw', maxWidth: '450px'}" 
       [header]="isEditMode ? 'Editar Autor' : 'Nuevo Autor'" 
       [modal]="true"
+      [draggable]="false"
+      [keepInViewport]="true"
+      [blockScroll]="true"
+      [closeOnEscape]="true"
+      [focusOnShow]="false"
+      appendTo="body"
       styleClass="backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-2xl overflow-hidden">
       
       <form [formGroup]="form" class="flex flex-col gap-5 py-4 px-2">
@@ -162,6 +168,7 @@ export class AdminAuthors implements OnInit {
     this.isEditMode = false;
     this.form.reset();
     this.displayDialog = true;
+    this.cdr.detectChanges();
   }
 
   editAuthor(author: Author) {
@@ -169,6 +176,7 @@ export class AdminAuthors implements OnInit {
     this.selectedId = author.idAuthor;
     this.form.patchValue({ firstName: author.firstName, surName: author.surName });
     this.displayDialog = true;
+    this.cdr.detectChanges();
   }
 
   deleteAuthor(author: Author) {
@@ -183,11 +191,13 @@ export class AdminAuthors implements OnInit {
           next: () => {
             this.loadAuthors();
             this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Autor eliminado.' });
+            this.cdr.detectChanges();
           },
           error: () => {
             this.authors = this.authors.filter(a => a.idAuthor !== author.idAuthor);
             localStorage.setItem('authors', JSON.stringify(this.authors));
             this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Autor eliminado (modo local).' });
+            this.cdr.detectChanges();
           }
         });
       }
@@ -212,6 +222,7 @@ export class AdminAuthors implements OnInit {
             detail: this.isEditMode ? 'Autor actualizado exitosamente.' : 'Nuevo autor registrado.' 
           });
           this.displayDialog = false;
+          this.cdr.detectChanges();
         },
         error: () => {
           // Fallback local
@@ -230,6 +241,7 @@ export class AdminAuthors implements OnInit {
           }
           localStorage.setItem('authors', JSON.stringify(this.authors));
           this.displayDialog = false;
+          this.cdr.detectChanges();
         }
       });
     }

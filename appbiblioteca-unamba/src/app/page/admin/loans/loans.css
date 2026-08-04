@@ -1,1 +1,7 @@
-/* Loans styles */
+.line-through {
+  text-decoration: line-through !important;
+}
+
+.text-slate-400 {
+  color: #94a3b8 !important;
+}

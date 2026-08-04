@@ -1,5 +1,5 @@
-<p-toast />
-<p-confirmdialog />
+<p-toast appendTo="body" />
+<p-confirmdialog appendTo="body" />
 
 <div class="bg-white rounded-2xl flex flex-col gap-4 fade-in" style="border: 1px solid #e2e8f0; box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);">
   <!-- Header Row -->
@@ -80,11 +80,15 @@
 <!-- Add/Edit Book Dialog -->
 <p-dialog 
   [(visible)]="bookDialog" 
-  [style]="{width: '750px'}" 
+  [style]="{width: '90vw', maxWidth: '750px'}" 
   [header]="isEditMode ? 'Editar Libro' : 'Registrar Nuevo Libro'" 
   [modal]="true" 
   [draggable]="false"
   [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body"
   styleClass="p-fluid bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl text-slate-700">
   
   <ng-template #content>
@@ -96,7 +100,10 @@
         <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-1.5">
             <label for="title" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Título del Libro</label>
-            <input pInputText id="title" formControlName="title" class="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none" />
+            <input pInputText id="title" formControlName="title" class="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm" />
+            @if (isFieldInvalid('title')) {
+              <small class="text-rose-500 text-[10px] font-bold">El título es requerido.</small>
+            }
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -110,6 +117,9 @@
               [dropdown]="true"
               styleClass="w-full"
               inputStyleClass="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm" />
+            @if (isFieldInvalid('idAuthor')) {
+              <small class="text-rose-500 text-[10px] font-bold">El autor es requerido.</small>
+            }
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -123,20 +133,29 @@
               [dropdown]="true"
               styleClass="w-full"
               inputStyleClass="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm" />
+            @if (isFieldInvalid('idCategory')) {
+              <small class="text-rose-500 text-[10px] font-bold">La categoría es requerida.</small>
+            }
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1.5">
               <label for="totalCopies" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock Total</label>
-              <p-inputNumber id="totalCopies" formControlName="totalCopies" />
+              <input type="number" pInputText id="totalCopies" formControlName="totalCopies" min="0" class="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm" />
+              @if (isFieldInvalid('totalCopies')) {
+                <small class="text-rose-500 text-[10px] font-bold">Mínimo 1 copia.</small>
+              }
             </div>
             <div class="flex flex-col gap-1.5">
-              <label for="availableCopies" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Disponibles</label>
-              <p-inputNumber id="availableCopies" formControlName="availableCopies" />
+              <label for="availableCopies" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock Disponible</label>
+              <input type="number" pInputText id="availableCopies" formControlName="availableCopies" min="0" class="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm" />
+              @if (isFieldInvalid('availableCopies')) {
+                <small class="text-rose-500 text-[10px] font-bold">Mínimo 0 copias.</small>
+              }
             </div>
           </div>
           @if (bookForm.hasError('invalidCopies')) {
-            <small class="text-rose-500 text-[10px] font-bold">Disponibles no puede superar el stock total.</small>
+            <small class="text-rose-500 text-[10px] font-bold">Stock Disponible no puede superar el stock total.</small>
           }
         </div>
 
@@ -150,6 +169,9 @@
               formControlName="description" 
               rows="4"
               class="w-full bg-white border border-slate-350 rounded-xl py-2 px-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 outline-none text-sm"></textarea>
+            @if (isFieldInvalid('description')) {
+              <small class="text-rose-500 text-[10px] font-bold">La descripción es requerida.</small>
+            }
           </div>
 
           <div class="flex flex-col gap-2">
@@ -215,6 +237,9 @@
                 </div>
               </div>
             }
+            @if (isFieldInvalid('image')) {
+              <small class="text-rose-500 text-[10px] font-bold">La portada del libro es requerida.</small>
+            }
           </div>
         </div>
 
@@ -225,13 +250,24 @@
   <ng-template #footer>
     <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 px-2">
       <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (click)="bookDialog = false" />
-      <p-button label="Guardar" icon="pi pi-check" [disabled]="bookForm.invalid" (click)="saveBook()" styleClass="bg-indigo-600 hover:bg-indigo-750 border-none rounded-xl text-white" />
+      <p-button label="Guardar" icon="pi pi-check" (click)="saveBook()" styleClass="bg-indigo-600 hover:bg-indigo-750 border-none rounded-xl text-white" />
     </div>
   </ng-template>
 </p-dialog>
 
 <!-- Confirmation Dialog for Saving Book -->
-<p-dialog [(visible)]="displayConfirmBook" [style]="{width: '450px'}" header="Confirmar Guardado" [modal]="true" [draggable]="false" [keepInViewport]="true" styleClass="bg-white border border-slate-200 rounded-2xl shadow-xl">
+<p-dialog 
+  [(visible)]="displayConfirmBook" 
+  [style]="{width: '90vw', maxWidth: '450px'}" 
+  [header]="'Confirmar Guardado'" 
+  [modal]="true" 
+  [draggable]="false" 
+  [keepInViewport]="true" 
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body"
+  styleClass="bg-white border border-slate-200 rounded-2xl shadow-xl">
   <div class="flex flex-col gap-4 py-2" *ngIf="bookSummary">
     <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex flex-col gap-3">
       <div class="flex flex-col">
@@ -267,12 +303,16 @@
 <!-- Unified Autores & Categorias Dialog -->
 <p-dialog 
   [(visible)]="displayManageDialog" 
-  [style]="{width: '650px'}" 
-  header="Gestión de Catálogos" 
+  [style]="{width: '90vw', maxWidth: '650px'}" 
+  [header]="'Gestión de Catálogos'" 
   [modal]="true" 
   [draggable]="false"
   [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
   (onHide)="loadData()"
+  appendTo="body"
   styleClass="bg-white border border-slate-200 rounded-2xl shadow-xl text-slate-700">
   
   <div class="flex flex-col gap-4 py-2">

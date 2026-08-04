@@ -13,6 +13,5 @@ public class RequestLogin {
     @NotBlank(message = "El código o contraseña es requerido")
     private String code;
 
-    @NotBlank(message = "El rol es requerido")
     private String role; // 'admin' o 'student' / 'Bibliotecario' o 'Estudiante'
 }

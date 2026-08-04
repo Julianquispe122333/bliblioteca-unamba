@@ -31,8 +31,8 @@ interface Category {
     ConfirmDialogModule
   ],
   template: `
-    <p-toast />
-    <p-confirmdialog />
+    <p-toast appendTo="body" />
+    <p-confirmdialog appendTo="body" />
 
     <div class="bg-white border border-slate-200/80 rounded-[2rem] p-6 sm:p-8 flex flex-col gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6">

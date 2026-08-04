@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -39,7 +39,7 @@ interface Reservation {
   styleUrls: ['./reservations.css'],
   providers: [MessageService]
 })
-export class StudentReservations implements OnInit {
+export class StudentReservations implements OnInit, OnDestroy {
   private router = inject(Router);
   private messageService = inject(MessageService);
   private apiService = inject(ApiService);
@@ -47,6 +47,7 @@ export class StudentReservations implements OnInit {
   studentName: string = '';
   reservations: Reservation[] = [];
   activeLoans: any[] = [];
+  private expirationInterval: any;
 
   ngOnInit(): void {
     const userStr = localStorage.getItem('currentUser');
@@ -63,6 +64,17 @@ export class StudentReservations implements OnInit {
     }
 
     this.loadReservations();
+
+    // Check expiration every 5 seconds in real-time
+    this.expirationInterval = setInterval(() => {
+      this.loadReservationsLocal();
+    }, 5000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.expirationInterval) {
+      clearInterval(this.expirationInterval);
+    }
   }
 
   private cdr = inject(ChangeDetectorRef);
@@ -99,10 +111,8 @@ export class StudentReservations implements OnInit {
         }
       }
 
-      if (list.length > 0) {
-        this.reservations = list;
-        localStorage.setItem('reservations', JSON.stringify(this.reservations));
-      }
+      this.reservations = list;
+      localStorage.setItem('reservations', JSON.stringify(this.reservations));
 
       this.cdr.markForCheck();
       this.cdr.detectChanges();
@@ -136,15 +146,14 @@ export class StudentReservations implements OnInit {
 
     if (storedReservations) {
       const allReservations: Reservation[] = JSON.parse(storedReservations);
-      const today = new Date().toISOString().split('T')[0];
+      const nowTime = new Date().getTime();
       let modified = false;
-
-      // Cargar libros actuales para devolver stock
       const storedBooks = localStorage.getItem('books');
       let booksList: any[] = storedBooks ? JSON.parse(storedBooks) : [];
 
       allReservations.forEach(r => {
-        if (r.status === 'Pendiente' && r.expirationDate < today) {
+        const expTime = r.expirationDate ? new Date(r.expirationDate).getTime() : 0;
+        if (r.status === 'Pendiente' && expTime > 0 && expTime < nowTime) {
           r.status = 'Vencido';
           modified = true;
 
@@ -162,6 +171,8 @@ export class StudentReservations implements OnInit {
       if (modified) {
         localStorage.setItem('reservations', JSON.stringify(allReservations));
         localStorage.setItem('books', JSON.stringify(booksList));
+        // Disparar evento para actualizar catálogo en el frontend si es necesario
+        window.dispatchEvent(new Event('storage'));
       }
 
       this.reservations = allReservations

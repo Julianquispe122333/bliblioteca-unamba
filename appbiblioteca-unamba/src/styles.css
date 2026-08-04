@@ -225,3 +225,8 @@ html, body {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Ensure toast notifications are on top of all dialogs */
+.p-toast {
+  z-index: 99999 !important;
+}

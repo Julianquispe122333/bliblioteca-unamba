@@ -260,10 +260,21 @@ export class StudentCatalog implements OnInit {
       bookTitles: titles
     }).subscribe({
       next: (res) => {
+        if (res && res.type === 'error') {
+          const msg = res.listMessage && res.listMessage.length > 0 ? res.listMessage[0] : 'Error al realizar la reserva';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 3500 });
+          return;
+        }
         const code = (res && res.data && res.data.code) ? res.data.code : ('RES' + Math.floor(1000 + Math.random() * 9000));
         this.confirmReservationSuccess(code);
       },
-      error: () => {
+      error: (err) => {
+        if (err.status === 401) {
+          // Dejar que el interceptor maneje la redirección, no mostrar alerta de red ni guardar local
+          return;
+        }
+        const errorMsg = err.error?.listMessage?.[0] || 'Error de red o el servidor no responde';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 3500 });
         this.confirmReservationLocal();
       }
     });
@@ -304,8 +315,8 @@ export class StudentCatalog implements OnInit {
       bookTitles: titles,
       bookTitle: titles.join(', '),
       status: 'Pendiente',
-      expirationDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      createdAt: new Date().toISOString().split('T')[0]
+      expirationDate: new Date(Date.now() + 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString()
     };
 
     allReservations.push(newReservation);

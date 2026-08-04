@@ -1,8 +1,8 @@
 <div class="flex flex-col gap-8 pb-8">
   <!-- Search & Category Filters -->
   <div class="relative bg-white/60 backdrop-blur-xl border border-white/80 p-6 sm:p-8 rounded-[2rem] flex flex-col gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden group">
-    <div class="absolute -top-24 -right-24 w-48 h-48 bg-rose-400/10 rounded-full blur-3xl group-hover:bg-rose-400/20 transition-colors duration-700"></div>
-    <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl group-hover:bg-amber-400/20 transition-colors duration-700"></div>
+    <div class="absolute -top-24 -right-24 w-48 h-48 bg-rose-400/10 rounded-full blur-3xl group-hover:bg-rose-400/20 transition-colors duration-700 pointer-events-none"></div>
+    <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl group-hover:bg-amber-400/20 transition-colors duration-700 pointer-events-none"></div>
     
     <div class="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center relative z-10">
       <div>
@@ -96,9 +96,15 @@
 <!-- Book Detail Dialog -->
 <p-dialog
   [(visible)]="displayDetailDialog"
-  [style]="{width: '550px'}"
-  header="Detalle del Libro"
-  [modal]="true">
+  [style]="{width: '90vw', maxWidth: '550px'}"
+  [header]="'Detalle del Libro'"
+  [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body">
 
   @if (selectedBook) {
     <div class="flex flex-col gap-5 py-2 px-1">
@@ -148,9 +154,15 @@
 <!-- PDF Preview Dialog (Demo) -->
 <p-dialog
   [(visible)]="displayPdfDialog"
-  [style]="{width: '700px', height: '500px'}"
-  header="Visualizador PDF (Demostración)"
-  [modal]="true">
+  [style]="{width: '90vw', maxWidth: '700px', height: 'auto', maxHeight: '90vh'}"
+  [header]="'Visualizador PDF (Demostración)'"
+  [modal]="true"
+  [draggable]="false"
+  [keepInViewport]="true"
+  [blockScroll]="true"
+  [closeOnEscape]="true"
+  [focusOnShow]="false"
+  appendTo="body">
   <div class="w-full h-full flex flex-col items-center justify-center bg-slate-100 rounded-xl p-8 border border-slate-200 text-center gap-4">
     <div class="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-400">
       <i class="pi pi-file-pdf text-3xl"></i>
